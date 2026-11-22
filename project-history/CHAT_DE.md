@@ -98,6 +98,18 @@ Vor einer Fertigmeldung:
 - **Offen / nicht durch diesen Nachweis abgedeckt:** Vollständiger Test mit synthetischen CSV-Daten, OCR unter verschiedenen Browsern, vollständige mobile Regression und Export-Reimport-Konsistenz.
 - **Nächste Änderung:** Vor Implementierung diese offene Liste und die betroffenen Funktionen prüfen, danach hier einen neuen Eintrag hinzufügen.
 
+### 2026-11-22 – Modularisierte statische App-Dateien übernommen
+- Auftrag/Ziel: Die vom Nutzer bereitgestellten modularisierten Dateien (`index.html`, `styles.css`, `i18n.js`, `app.js`) im Projektstamm übernehmen, damit sie nach GitHub synchronisiert werden können.
+- Ursache bzw. Ausgangszustand: Bisher bestand das Repository aus einer einzelnen `index.html` mit Inline-CSS, Inline-JavaScript und Textersetzungs-Übersetzung.
+- Geänderte Dateien: `index.html`, `styles.css` (neu), `i18n.js` (neu), `app.js` (neu), `project-history/CHAT.md`, `project-history/CHAT_DE.md`.
+- Umsetzung: `index.html` aktualisiert und `styles.css`, `i18n.js` (schlüsselbasiertes EN/DE-Wörterbuch) sowie `app.js` (u. a. eigener Kalorien-Parser für Tausendertrennzeichen und sichere Initialisierungsreihenfolge) hinzugefügt. Alle drei `localStorage`-Schlüssel (`atlassometria-local-v1`, `atlassometria-theme-v1`, `atlassometria-language-v1`) und die deutschen Beurer-CSV-Schlüssel blieben unverändert. Temporären Upload-Ordner entfernt.
+- Datenschutzprüfung (konkret): Alle vier Dateien geprüft; keine eingebetteten persönlichen Messwerte, CSV-Exporte, Zugangsdaten, Tokens oder lokale Pfade enthalten.
+- Syntax/Build (konkret): `node --check i18n.js` und `node --check app.js` ohne Fehler (Exit-Code 0).
+- Funktionstest im Browser (Schritte und Ergebnis): In diesem Arbeitsbereich nicht durchgeführt.
+- Live-Deployment (URL und bestätigte Version): Noch nicht auf GitHub hochgeladen und nicht auf GitHub Pages geprüft (Sync über AI-Studio-Oberfläche steht aus).
+- Nicht getestet / bekannte Einschränkungen: Vollständiger Browser-Funktionstest (Erststart, EN ↔ DE, Themewechsel, synthetischer CSV-Import/-Export, BMR/AMR-Dialog, OCR, Mobilansicht) sowie Prüfung der Live-Seite nach Veröffentlichung stehen noch aus.
+- Commit(s): Ausstehend (Push durch Nutzer über GitHub-Sync).
+
 ---
 
 ### Vorlage für zukünftige Einträge

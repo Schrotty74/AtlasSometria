@@ -99,6 +99,18 @@ Before reporting a change as complete:
 - **Open / not covered by that verification:** Full synthetic CSV test, OCR testing across browsers, full mobile regression, and export/reimport consistency.
 - **Next change:** Review these open checks and the relevant functionality before implementation, then append entries to **both** language versions.
 
+### 2026-11-22 – Modularized static app files imported into workspace
+- Request / objective: Apply the refactored static AtlasSometria files (`index.html`, `styles.css`, `i18n.js`, `app.js`) provided by the user into the repository root so they can be synced to GitHub.
+- Root cause or starting state: Previous repository state contained a single monolithic `index.html` with inline CSS, JavaScript, and DOM substring-based i18n.
+- Files changed: `index.html`, `styles.css` (new), `i18n.js` (new), `app.js` (new), `project-history/CHAT.md`, `project-history/CHAT_DE.md`.
+- Implementation: Replaced `index.html` and added separate `styles.css`, `i18n.js` (key-based EN/DE dictionary), and `app.js` (including dedicated kcal thousands-separator parsing and safe initialization order). Preserved all three `localStorage` keys (`atlassometria-local-v1`, `atlassometria-theme-v1`, `atlassometria-language-v1`) and German Beurer CSV keys. Removed temporary upload staging directory.
+- Privacy audit (specific): Inspected all four files; no embedded personal measurements, CSV exports, user credentials, tokens, or local paths found.
+- Syntax/build check (specific): `node --check i18n.js` and `node --check app.js` exited with code 0.
+- Browser functional test (steps and result): Not performed in this workspace.
+- Live deployment (URL and confirmed version): Not yet pushed to GitHub or verified on GitHub Pages (manual GitHub sync from AI Studio UI required).
+- Not tested / known limitations: Full interactive browser test (initial load, EN ↔ DE switching, theme switching, synthetic CSV import/export, BMR/AMR modal, OCR, mobile layout) and live GitHub Pages deployment check are still pending.
+- Commit(s): Pending user push via GitHub sync.
+
 ---
 
 ### Template for future entries
