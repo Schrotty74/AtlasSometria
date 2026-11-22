@@ -8,7 +8,7 @@ These instructions apply to every change to this repository, including changes m
 
 ## Change history and chat handoff
 
-Before starting work, also read [`project-history/CHAT.md`](project-history/CHAT.md). After each repository change, append a factual record with date, objective, affected files, root cause (if applicable), commit SHA, privacy check, actual tests performed, deployment verification, and anything not tested. This history is a technical handoff, not a verbatim private conversation transcript; never include personal health measurements, uploaded files, tokens, or sensitive metadata. Update this file as part of the same authorized publication workflow whenever feasible.
+Before starting work, read **both** [`project-history/CHAT.md`](project-history/CHAT.md) (English) and [`project-history/CHAT_DE.md`](project-history/CHAT_DE.md) (German). After each repository change, update **both language versions** with matching factual records with date, objective, affected files, root cause (if applicable), commit SHA, privacy check, actual tests performed, deployment verification, and anything not tested. This history is a technical handoff, not a verbatim private conversation transcript; never include personal health measurements, uploaded files, tokens, or sensitive metadata. Update both files as part of the same authorized publication workflow whenever feasible; maintain reciprocal language links.
 
 ## Required workflow
 
