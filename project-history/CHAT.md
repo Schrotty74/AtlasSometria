@@ -134,9 +134,9 @@ Before reporting a change as complete:
 - Privacy audit (specific): Audited all added/modified files; no personal measurements, user CSVs, screenshots, tokens, or local paths; temporary user screenshot staging folder removed. External network traffic remains strictly limited to on-demand Tesseract.js OCR.
 - Syntax/build check (specific): `node --check i18n.js`, `node --check app.js`, and `node --check sw.js` exited 0; automated Node suite verified `manifest.json` and PNG icon files, 183/183 EN/DE I18N key parity, all 42 DOM IDs and 68 HTML + 71 JS i18n keys, `parseKcal()` (`1.850`, `2,450`, `1.850,5`, `1920`), synthetic CSV import → comma-decimal export → lossless re-import round-trip, 7-day moving average math, and comparison baseline matching (`prev`, `7d`, `30d`, `first`).
 - Browser functional test (steps and result): Not yet performed in a real browser after this update.
-- Live deployment (URL and confirmed version): Local workspace ready; not yet pushed to GitHub or verified live on GitHub Pages.
-- Not tested / known limitations: Interactive browser test (chart tap tooltip on iPhone Safari, 7-day average visuals across all 4 themes, single-delete, backup reminder, iOS Add-to-Home-Screen icon, `file://` loading, OCR) and live GitHub Pages deployment verification remain open.
-- Commit(s): Pending user push via AI Studio GitHub sync.
+- Live deployment (URL and confirmed version): **Status updated after the original entry:** Published to GitHub `main` in commit [`c6e3534c3`](https://github.com/Schrotty74/AtlasSometria/commit/c6e3534c3295114d5fcdbac39894c51f94627c16). On November 22, 2026, the live GitHub Pages URL returned HTTP 200 and exposed the new HTML references and controls (manifest, `app.js`, range selector, install button, language selector). This confirms availability of the updated page structure, **not** functional verification of all new features.
+- Not tested / known limitations: End-to-end browser functionality remains unverified for chart tap tooltips in iPhone Safari, 7-day average visuals across all 4 themes, single-delete, backup reminder, actual iOS home-screen installation, `file://` loading, OCR and existing-user data migration. Updated HTML availability on GitHub Pages was checked separately; this is not a functional test.
+- Commit(s): [`c6e3534c3`](https://github.com/Schrotty74/AtlasSometria/commit/c6e3534c3295114d5fcdbac39894c51f94627c16) (`feat: add PWA support and enhance dashboard features`). The previous 'pending push' status referred only to the original draft.
 
 ---
 
