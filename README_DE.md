@@ -22,6 +22,8 @@ Die Web-App startet **ohne persönliche oder vorinstallierte Beispieldaten**.
 
 Welche Werte tatsächlich verfügbar sind, hängt von der Waage, den CSV-Spalten und der Messung ab. **Nicht jeder in HealthManager Pro sichtbare Wert wird zwingend in der CSV exportiert.**
 
+- **Sprachauswahl:** Englisch ist die Standardsprache der Oberfläche. Du kannst in der App auf Deutsch umschalten; die Auswahl wird lokal gespeichert. Die deutschen Beurer-CSV-Spaltennamen bleiben unabhängig von der Oberflächensprache unverändert.
+
 ## Verwendung
 
 1. Die [AtlasSometria-Web-App](https://schrotty74.github.io/AtlasSometria/) im Browser öffnen (nach Aktivierung von GitHub Pages).
