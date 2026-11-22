@@ -56,7 +56,7 @@ Die Repository-Adresse zeigt den Quellcode, während die GitHub-Pages-Adresse di
 
 ## Technik
 
-AtlasSometria ist eine statische `index.html` mit integriertem CSS und JavaScript. Ein Build-System ist nicht erforderlich. Lokal kann die Datei mit einem einfachen HTTP-Server bereitgestellt werden. Dateiimporte und OCR sollten auf den verwendeten Browsern praktisch getestet werden.
+AtlasSometria besteht aus statischen Dateien (`index.html`, `styles.css`, `i18n.js`, `app.js` sowie `assets/`). Ein Build-System ist nicht erforderlich – die App lässt sich direkt über `file://` oder über einen einfachen HTTP-Server öffnen. Dateiimporte und OCR sollten auf den verwendeten Browsern praktisch getestet werden.
 
 ## Lizenz
 

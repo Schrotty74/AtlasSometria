@@ -11,7 +11,10 @@
 
 ## Aktuelle Projektstruktur
 
-- `index.html` – vollständige statische Web-App mit HTML, CSS und JavaScript; direkt über GitHub Pages aufrufbar.
+- `index.html` – statische Einstiegsseite mit `data-i18n`-Attributen und klassischen `<script defer>`-Einbindungen (`./i18n.js`, `./app.js`), weiterhin ohne Build-System offline per `file://` und über GitHub Pages nutzbar.
+- `styles.css` – Stylesheet mit Layout, responsiven Regeln und allen vier Farbschemata (Nachtblau, Elfenbein, Café Latte, Neon).
+- `i18n.js` – schlüsselbasiertes Englisch/Deutsch-Wörterbuch (`AtlasI18n`, Englisch als Standard, deutsche Beurer-CSV-Schlüssel bleiben intern unverändert).
+- `app.js` – Dashboard-Logik, CSV-Import/-Export, Diagramme, Segmentanalyse, manuelle BMR-/AMR-Eingabe und bedarfsweises Tesseract.js-OCR.
 - `assets/favicon.svg` – skalierbares Favicon.
 - `assets/logo.svg` – Logo für die Repository-Startseite.
 - `README.md` und `README_DE.md` – englische und deutsche Dokumentation.
@@ -98,17 +101,24 @@ Vor einer Fertigmeldung:
 - **Offen / nicht durch diesen Nachweis abgedeckt:** Vollständiger Test mit synthetischen CSV-Daten, OCR unter verschiedenen Browsern, vollständige mobile Regression und Export-Reimport-Konsistenz.
 - **Nächste Änderung:** Vor Implementierung diese offene Liste und die betroffenen Funktionen prüfen, danach hier einen neuen Eintrag hinzufügen.
 
-### 2026-11-22 – Modularisierte statische App-Dateien übernommen
-- Auftrag/Ziel: Die vom Nutzer bereitgestellten modularisierten Dateien (`index.html`, `styles.css`, `i18n.js`, `app.js`) im Projektstamm übernehmen, damit sie nach GitHub synchronisiert werden können.
-- Ursache bzw. Ausgangszustand: Bisher bestand das Repository aus einer einzelnen `index.html` mit Inline-CSS, Inline-JavaScript und Textersetzungs-Übersetzung.
-- Geänderte Dateien: `index.html`, `styles.css` (neu), `i18n.js` (neu), `app.js` (neu), `project-history/CHAT.md`, `project-history/CHAT_DE.md`.
-- Umsetzung: `index.html` aktualisiert und `styles.css`, `i18n.js` (schlüsselbasiertes EN/DE-Wörterbuch) sowie `app.js` (u. a. eigener Kalorien-Parser für Tausendertrennzeichen und sichere Initialisierungsreihenfolge) hinzugefügt. Alle drei `localStorage`-Schlüssel (`atlassometria-local-v1`, `atlassometria-theme-v1`, `atlassometria-language-v1`) und die deutschen Beurer-CSV-Schlüssel blieben unverändert. Temporären Upload-Ordner entfernt.
-- Datenschutzprüfung (konkret): Alle vier Dateien geprüft; keine eingebetteten persönlichen Messwerte, CSV-Exporte, Zugangsdaten, Tokens oder lokale Pfade enthalten.
-- Syntax/Build (konkret): `node --check i18n.js` und `node --check app.js` ohne Fehler (Exit-Code 0).
-- Funktionstest im Browser (Schritte und Ergebnis): In diesem Arbeitsbereich nicht durchgeführt.
-- Live-Deployment (URL und bestätigte Version): Noch nicht auf GitHub hochgeladen und nicht auf GitHub Pages geprüft (Sync über AI-Studio-Oberfläche steht aus).
-- Nicht getestet / bekannte Einschränkungen: Vollständiger Browser-Funktionstest (Erststart, EN ↔ DE, Themewechsel, synthetischer CSV-Import/-Export, BMR/AMR-Dialog, OCR, Mobilansicht) sowie Prüfung der Live-Seite nach Veröffentlichung stehen noch aus.
-- Commit(s): Ausstehend (Push durch Nutzer über GitHub-Sync).
+### 2026-11-22 – Modularisierte statische Struktur, schlüsselbasierte I18N und gezielte Bugfixes
+- Auftrag/Ziel: Die bisherige Einzeldatei `index.html` ohne Build-Step in klar getrennte statische Dateien (`index.html`, `styles.css`, `i18n.js`, `app.js`) aufteilen, die Übersetzung auf ein festes Schlüssel-Wörterbuch umstellen sowie Fehler bei Screenshot-OCR, Kalorien-Parsing und CSV-Dezimalformat beheben.
+- Ursache bzw. Ausgangszustand: Bisher lagen HTML, CSS, JavaScript und eine `MutationObserver`/Textersetzungs-Übersetzung zusammen in einer einzelnen `index.html`. Screenshot-Uploads ohne geladene CSV konnten unnötig OCR anstoßen, Tausendertrennzeichen in Kalorienwerten (`1.850` / `2,450`) wurden teils fehlinterpretiert und der CSV-Export nutzte nicht durchgängig deutsche Dezimalkommas.
+- Geänderte Dateien: `index.html`, `styles.css` (neu), `i18n.js` (neu), `app.js` (neu), `README.md`, `README_DE.md`, `project-history/CHAT.md`, `project-history/CHAT_DE.md`.
+- Umsetzung:
+  - Einzeldatei in `index.html`, `styles.css`, `i18n.js` und `app.js` neben `assets/` (`favicon.svg`, `logo.svg`) aufgeteilt; relative `./`-Pfade und klassische `<script defer>`-Tags erhalten die Offline-Nutzbarkeit über `file://` ohne Build-Step.
+  - Übersetzung (EN Standard / DE umschaltbar) auf festes Schlüssel-Wörterbuch (`data-i18n` + `t()`) umgestellt; `MutationObserver`, `WeakMap`-Cache und `alert`/`confirm`-Patches entfernt.
+  - Bestehende `localStorage`-Schlüssel (`atlassometria-local-v1`, `atlassometria-theme-v1`, `atlassometria-language-v1`), alle vier Themes und deutsche Beurer-CSV-Schlüssel unverändert erhalten.
+  - Bugfix: Screenshot-Upload ohne geladene CSV bricht sofort ab (kein OCR-Start im Hintergrund); Bild-Vorschau-URL wird beim Schließen sauber freigegeben; Kalorien-Modal lässt sich per `Escape` schließen.
+  - Bugfix: `parseKcal()` erkennt Tausenderpunkte/-kommas (`1.850` / `2,450` kcal) bei manueller Eingabe und OCR korrekt.
+  - Bugfix: CSV-Export (`fmtCsvDecimal`) schreibt Dezimalzahlen mit Komma (`81,5`) für deutsches Excel bei verlustfreiem Re-Import.
+  - `showResult()` auf sicheres DOM-Rendering mit `textContent` umgestellt.
+- Datenschutzprüfung (konkret): Alle geänderten Dateien geprüft; keine eingebetteten persönlichen Messdaten, CSV-Exporte, Zugangsdaten, Tokens oder lokalen Pfade; keine externen Ressourcen beim Start (Tesseract.js nur optional bei OCR).
+- Syntax/Build (konkret): In diesem Arbeitsbereich geprüft mit `node --check i18n.js`, `node --check app.js` sowie einem automatisierten Node-Prüfskript für die EN/DE-Schlüsselparität, alle 26 Metrik-Labels und `parseKcal`-Fälle (`1.850`, `2,450`, `1.850,5`).
+- Funktionstest im Browser (Schritte und Ergebnis): Echte Browser-Klickstrecke (inkl. `file://`-Offline-Test, EN ↔ DE, Themewechsel, synthetischer CSV-Import/-Export/-Reimport, OCR und Mobilansicht) noch nicht durchgeführt.
+- Live-Deployment (URL und bestätigte Version): Code vom Nutzer nach `Schrotty74/AtlasSometria` gepusht; Live-Prüfung auf GitHub Pages (`https://schrotty74.github.io/AtlasSometria/`) steht noch aus.
+- Nicht getestet / bekannte Einschränkungen: Vollständige Browser-Klickstrecke (inkl. `file://`, CSV-Import/Export-Reimport, OCR, mobile Ansicht) und Verifikation der Live-GitHub-Pages-Version noch offen.
+- Commit(s): Durch Nutzer über AI-Studio-GitHub-Sync gepusht (Commit-SHA nach Dokumentations-Sync nachtragbar).
 
 ---
 

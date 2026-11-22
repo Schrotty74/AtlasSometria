@@ -11,7 +11,10 @@
 
 ## Current project structure
 
-- `index.html` – complete static web app with HTML, CSS, and JavaScript, served through GitHub Pages.
+- `index.html` – static entry HTML with semantic markup, `data-i18n` hooks, and deferred classic scripts (`./i18n.js`, `./app.js`), usable offline via `file://` and on GitHub Pages without a build system.
+- `styles.css` – stylesheet containing layout, responsive rules, and all four color themes (Night Blue, Ivory, Café Latte, Neon).
+- `i18n.js` – key-based English/German translation dictionary (`AtlasI18n`, English default, German Beurer CSV keys preserved internally).
+- `app.js` – dashboard logic, CSV import/export, charts, segment analysis, manual BMR/AMR entry, and on-demand Tesseract.js OCR.
 - `assets/favicon.svg` – scalable browser favicon.
 - `assets/logo.svg` – logo shown on the repository home page.
 - `README.md` and `README_DE.md` – English and German documentation.
@@ -99,17 +102,24 @@ Before reporting a change as complete:
 - **Open / not covered by that verification:** Full synthetic CSV test, OCR testing across browsers, full mobile regression, and export/reimport consistency.
 - **Next change:** Review these open checks and the relevant functionality before implementation, then append entries to **both** language versions.
 
-### 2026-11-22 – Modularized static app files imported into workspace
-- Request / objective: Apply the refactored static AtlasSometria files (`index.html`, `styles.css`, `i18n.js`, `app.js`) provided by the user into the repository root so they can be synced to GitHub.
-- Root cause or starting state: Previous repository state contained a single monolithic `index.html` with inline CSS, JavaScript, and DOM substring-based i18n.
-- Files changed: `index.html`, `styles.css` (new), `i18n.js` (new), `app.js` (new), `project-history/CHAT.md`, `project-history/CHAT_DE.md`.
-- Implementation: Replaced `index.html` and added separate `styles.css`, `i18n.js` (key-based EN/DE dictionary), and `app.js` (including dedicated kcal thousands-separator parsing and safe initialization order). Preserved all three `localStorage` keys (`atlassometria-local-v1`, `atlassometria-theme-v1`, `atlassometria-language-v1`) and German Beurer CSV keys. Removed temporary upload staging directory.
-- Privacy audit (specific): Inspected all four files; no embedded personal measurements, CSV exports, user credentials, tokens, or local paths found.
-- Syntax/build check (specific): `node --check i18n.js` and `node --check app.js` exited with code 0.
-- Browser functional test (steps and result): Not performed in this workspace.
-- Live deployment (URL and confirmed version): Not yet pushed to GitHub or verified on GitHub Pages (manual GitHub sync from AI Studio UI required).
-- Not tested / known limitations: Full interactive browser test (initial load, EN ↔ DE switching, theme switching, synthetic CSV import/export, BMR/AMR modal, OCR, mobile layout) and live GitHub Pages deployment check are still pending.
-- Commit(s): Pending user push via GitHub sync.
+### 2026-11-22 – Modularized static architecture, key-based I18N, and targeted bugfixes
+- Request / objective: Split the monolithic single-file `index.html` into maintainable static files (`index.html`, `styles.css`, `i18n.js`, `app.js`) without introducing a build step, replace fragile DOM text-replacement i18n with a key-based dictionary, and fix CSV export decimal formatting, calorie parsing, and screenshot/modal edge cases.
+- Root cause or starting state: Previous repository state stored HTML, CSS, JavaScript, and a `MutationObserver`/substring-replacement translation layer in a single `index.html`. Screenshot uploads without a loaded CSV could still trigger OCR work, thousands separators in kcal values (e.g. `1.850` / `2,450`) could be misparsed, and CSV exports did not consistently format decimals with German commas.
+- Files changed: `index.html`, `styles.css` (new), `i18n.js` (new), `app.js` (new), `README.md`, `README_DE.md`, `project-history/CHAT.md`, `project-history/CHAT_DE.md`.
+- Implementation:
+  - Split the single-file app into `index.html`, `styles.css`, `i18n.js`, and `app.js` alongside `assets/favicon.svg` and `assets/logo.svg`, keeping relative `./` paths and classic `<script defer>` tags so the app remains usable without a build step and via `file://`.
+  - Replaced `MutationObserver`, `WeakMap` cache, and `alert`/`confirm` patches with a key-based EN/DE dictionary (`data-i18n` attributes and `t()` helper; English default, German switchable).
+  - Preserved all three existing `localStorage` keys (`atlassometria-local-v1`, `atlassometria-theme-v1`, `atlassometria-language-v1`), all four themes, and German Beurer CSV source keys.
+  - Bugfix: Aborted screenshot OCR immediately if no CSV measurements are loaded; revoked object preview URLs on modal close; added `Escape` key support to close the calorie modal.
+  - Bugfix: Added dedicated `parseKcal()` handling thousands separators (`1.850`, `2,450`) for both manual calorie input and OCR.
+  - Bugfix: Updated CSV export (`fmtCsvDecimal`) to write decimals with commas (e.g. `81,5`) for German Excel compatibility while keeping lossless re-import.
+  - Hardened `showResult()` to use safe DOM construction (`textContent`) instead of HTML interpolation.
+- Privacy audit (specific): Inspected all changed files; no embedded personal measurements, CSV exports, user credentials, tokens, or local paths; no external network requests on initial load (optional Tesseract.js loads on demand only during OCR).
+- Syntax/build check (specific): Verified in this workspace via `node --check i18n.js`, `node --check app.js`, and an automated Node verification check of EN/DE I18N key parity, all 26 metric labels, and `parseKcal` cases (`1.850`, `2,450`, `1.850,5`).
+- Browser functional test (steps and result): Not yet performed in a real browser (including `file://` offline check, interactive EN ↔ DE switching, theme switching, synthetic CSV import/export/re-import, OCR, and mobile layout).
+- Live deployment (URL and confirmed version): Code pushed by user to `Schrotty74/AtlasSometria`; live GitHub Pages deployment (`https://schrotty74.github.io/AtlasSometria/`) not yet verified after this update.
+- Not tested / known limitations: Full interactive browser click-through (including `file://`, CSV import/export round-trip, OCR, and mobile layout) and live GitHub Pages verification remain open.
+- Commit(s): Pushed by user via AI Studio GitHub sync (commit SHA to be recorded after documentation sync).
 
 ---
 

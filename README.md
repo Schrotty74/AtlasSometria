@@ -58,7 +58,7 @@ Opening the repository link itself shows source files; the GitHub Pages address 
 
 ## Development
 
-The app is a single static `index.html` with inline CSS and JavaScript. No build system or server is required. For local development, serve the repository through an HTTP server and open `index.html`. Test browser file-import and OCR support on each intended platform.
+The app consists of static files (`index.html`, `styles.css`, `i18n.js`, `app.js`, and `assets/`). No build system or server is required — it can be opened directly via `file://` or served through any static HTTP server. Test browser file-import and OCR support on each intended platform.
 
 ## License
 
