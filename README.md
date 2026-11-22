@@ -1,6 +1,6 @@
 # AtlasSometria
 
-![AtlasSometria logo](assets/logo.svg)
+<img src="assets/logo.svg" alt="AtlasSometria logo" width="320">
 
 **Body Composition Analytics** — a mobile-friendly, browser-based dashboard for body-composition measurements.
 
