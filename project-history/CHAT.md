@@ -97,9 +97,9 @@ Before reporting a change as complete:
 
 ## Last confirmed status and pending checks
 
-- **Last confirmed working live test:** English ↔ German language switching and theme switching after commit `c3874a9cc` (November 22, 2026).
+- **Last confirmed working live test:** Modularized deployment (`3ea58e2a5`, `b82d94300`) verified live on `https://schrotty74.github.io/AtlasSometria/` (HTTP 200 & SHA-256 match); language switching, theme switching, and CSV import confirmed working by the user on the live site (November 22, 2026).
 - **Project rules:** `AGENTS.md` has existed since commit `08ff2a717`.
-- **Open / not covered by that verification:** Full synthetic CSV test, OCR testing across browsers, full mobile regression, and export/reimport consistency.
+- **Open / not covered by that verification:** `file://` offline check, CSV export/re-import round-trip, in-browser manual BMR/AMR entry, OCR testing across browsers, and full mobile layout regression.
 - **Next change:** Review these open checks and the relevant functionality before implementation, then append entries to **both** language versions.
 
 ### 2026-11-22 – Modularized static architecture, key-based I18N, and targeted bugfixes
@@ -115,11 +115,11 @@ Before reporting a change as complete:
   - Bugfix: Updated CSV export (`fmtCsvDecimal`) to write decimals with commas (e.g. `81,5`) for German Excel compatibility while keeping lossless re-import.
   - Hardened `showResult()` to use safe DOM construction (`textContent`) instead of HTML interpolation.
 - Privacy audit (specific): Inspected all changed files; no embedded personal measurements, CSV exports, user credentials, tokens, or local paths; no external network requests on initial load (optional Tesseract.js loads on demand only during OCR).
-- Syntax/build check (specific): Verified in this workspace via `node --check i18n.js`, `node --check app.js`, and an automated Node verification check of EN/DE I18N key parity, all 26 metric labels, and `parseKcal` cases (`1.850`, `2,450`, `1.850,5`).
-- Browser functional test (steps and result): Not yet performed in a real browser (including `file://` offline check, interactive EN ↔ DE switching, theme switching, synthetic CSV import/export/re-import, OCR, and mobile layout).
-- Live deployment (URL and confirmed version): Code pushed by user to `Schrotty74/AtlasSometria`; live GitHub Pages deployment (`https://schrotty74.github.io/AtlasSometria/`) not yet verified after this update.
-- Not tested / known limitations: Full interactive browser click-through (including `file://`, CSV import/export round-trip, OCR, and mobile layout) and live GitHub Pages verification remain open.
-- Commit(s): Pushed by user via AI Studio GitHub sync (commit SHA to be recorded after documentation sync).
+- Syntax/build check (specific): Verified in this workspace via `node --check i18n.js`, `node --check app.js`, and an automated Node verification check of EN/DE I18N key parity (144/144 keys), all 26 metric labels, and `parseKcal()` cases (`1.850`, `2,450`, `1.850,5`).
+- Browser functional test (steps and result): Confirmed by the user on the live GitHub Pages site (`https://schrotty74.github.io/AtlasSometria/`): language switching, theme switching, and CSV import worked as expected.
+- Live deployment (URL and confirmed version): Verified live at `https://schrotty74.github.io/AtlasSometria/` after push: `/`, `/styles.css`, `/i18n.js`, `/app.js`, and `/assets/favicon.svg` all returned HTTP 200 with SHA-256 checksums identical to commits `3ea58e2a5` / `b82d94300`.
+- Not tested / known limitations: `file://` offline loading, CSV export/re-import round-trip, manual calorie entry in browser, screenshot OCR across browsers, and full mobile layout regression were not verified in this test pass.
+- Commit(s): [`3ea58e2a5`](https://github.com/Schrotty74/AtlasSometria/commit/3ea58e2a5) (modularized app code), [`b82d94300`](https://github.com/Schrotty74/AtlasSometria/commit/b82d94300) (documentation update), plus follow-up documentation sync for this live-test record.
 
 ---
 

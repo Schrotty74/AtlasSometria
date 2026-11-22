@@ -96,9 +96,9 @@ Vor einer Fertigmeldung:
 
 ## Letzter bestätigter Stand und offene Prüfungen
 
-- **Letzte belegte funktionierende Live-Prüfung:** Sprachwechsel Englisch ↔ Deutsch und Themewechsel nach Commit `c3874a9cc` (22.11.2026).
+- **Letzte belegte funktionierende Live-Prüfung:** Modularisierter Stand (`3ea58e2a5`, `b82d94300`) live auf `https://schrotty74.github.io/AtlasSometria/` verifiziert (HTTP 200 & SHA-256-Abgleich); Sprachwechsel, Themewechsel und CSV-Import vom Nutzer auf der Live-Seite erfolgreich getestet (22.11.2026).
 - **Projektregeln:** `AGENTS.md` seit Commit `08ff2a717` im Repository.
-- **Offen / nicht durch diesen Nachweis abgedeckt:** Vollständiger Test mit synthetischen CSV-Daten, OCR unter verschiedenen Browsern, vollständige mobile Regression und Export-Reimport-Konsistenz.
+- **Offen / nicht durch diesen Nachweis abgedeckt:** Offline-Test über `file://`, CSV-Export-/Reimport-Konsistenz, manuelle BMR-/AMR-Eingabe im Browser, OCR unter verschiedenen Browsern und vollständige mobile Regression.
 - **Nächste Änderung:** Vor Implementierung diese offene Liste und die betroffenen Funktionen prüfen, danach hier einen neuen Eintrag hinzufügen.
 
 ### 2026-11-22 – Modularisierte statische Struktur, schlüsselbasierte I18N und gezielte Bugfixes
@@ -114,11 +114,11 @@ Vor einer Fertigmeldung:
   - Bugfix: CSV-Export (`fmtCsvDecimal`) schreibt Dezimalzahlen mit Komma (`81,5`) für deutsches Excel bei verlustfreiem Re-Import.
   - `showResult()` auf sicheres DOM-Rendering mit `textContent` umgestellt.
 - Datenschutzprüfung (konkret): Alle geänderten Dateien geprüft; keine eingebetteten persönlichen Messdaten, CSV-Exporte, Zugangsdaten, Tokens oder lokalen Pfade; keine externen Ressourcen beim Start (Tesseract.js nur optional bei OCR).
-- Syntax/Build (konkret): In diesem Arbeitsbereich geprüft mit `node --check i18n.js`, `node --check app.js` sowie einem automatisierten Node-Prüfskript für die EN/DE-Schlüsselparität, alle 26 Metrik-Labels und `parseKcal`-Fälle (`1.850`, `2,450`, `1.850,5`).
-- Funktionstest im Browser (Schritte und Ergebnis): Echte Browser-Klickstrecke (inkl. `file://`-Offline-Test, EN ↔ DE, Themewechsel, synthetischer CSV-Import/-Export/-Reimport, OCR und Mobilansicht) noch nicht durchgeführt.
-- Live-Deployment (URL und bestätigte Version): Code vom Nutzer nach `Schrotty74/AtlasSometria` gepusht; Live-Prüfung auf GitHub Pages (`https://schrotty74.github.io/AtlasSometria/`) steht noch aus.
-- Nicht getestet / bekannte Einschränkungen: Vollständige Browser-Klickstrecke (inkl. `file://`, CSV-Import/Export-Reimport, OCR, mobile Ansicht) und Verifikation der Live-GitHub-Pages-Version noch offen.
-- Commit(s): Durch Nutzer über AI-Studio-GitHub-Sync gepusht (Commit-SHA nach Dokumentations-Sync nachtragbar).
+- Syntax/Build (konkret): In diesem Arbeitsbereich geprüft mit `node --check i18n.js`, `node --check app.js` sowie einem automatisierten Node-Prüfskript für die EN/DE-Schlüsselparität (144/144 Schlüssel), alle 26 Metrik-Labels und `parseKcal()`-Fälle (`1.850`, `2,450`, `1.850,5`).
+- Funktionstest im Browser (Schritte und Ergebnis): Vom Nutzer auf der Live-Seite (`https://schrotty74.github.io/AtlasSometria/`) durchgeführt und bestätigt: Sprachwechsel, Themewechsel und CSV-Import funktionierten einwandfrei.
+- Live-Deployment (URL und bestätigte Version): Live auf `https://schrotty74.github.io/AtlasSometria/` geprüft: `/`, `/styles.css`, `/i18n.js`, `/app.js` und `/assets/favicon.svg` lieferten jeweils HTTP 200 mit identischen SHA-256-Prüfsummen zu den Commits `3ea58e2a5` / `b82d94300`.
+- Nicht getestet / bekannte Einschränkungen: Offline-Start über `file://`, CSV-Export-/Reimport-Durchlauf, manuelle Kalorieneingabe im Browser, Screenshot-OCR in verschiedenen Browsern und vollständige mobile Regression wurden in diesem Durchgang nicht geprüft.
+- Commit(s): [`3ea58e2a5`](https://github.com/Schrotty74/AtlasSometria/commit/3ea58e2a5) (modularisierter App-Code), [`b82d94300`](https://github.com/Schrotty74/AtlasSometria/commit/b82d94300) (Dokumentations-Update) sowie Folge-Sync für dieses Live-Test-Protokoll.
 
 ---
 
