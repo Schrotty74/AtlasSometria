@@ -22,6 +22,8 @@ The application starts **without any preloaded, personal, or demonstration measu
 
 Available values depend on the scale, the exported CSV columns, and the selected measurement. **Not every value displayed by HealthManager Pro is necessarily included in its CSV export.**
 
+- **Language selector:** English is the default interface language. Switch to German in the app; the preference is stored locally. Beurer CSV column names remain German in both interface languages.
+
 ## Getting started
 
 1. Open the [AtlasSometria web app](https://schrotty74.github.io/AtlasSometria/) in your browser (once GitHub Pages is enabled for this repository).
