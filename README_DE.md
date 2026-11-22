@@ -12,13 +12,14 @@ Die Web-App startet **ohne persönliche oder vorinstallierte Beispieldaten**.
 
 ## Funktionen
 
-- CSV-Messwerte aus beurer HealthManager Pro importieren.
-- Gewicht, BMI, Körperfett, Muskeln und weitere exportierte Messwerte in farbigen Karten und Diagrammen anzeigen.
+- CSV-Messwerte aus beurer HealthManager Pro importieren (inkl. Anzeige des importierten Zeitraums).
+- Gewicht, BMI, Körperfett, Muskeln und weitere Messwerte in farbigen Karten mit wählbarem Vergleichszeitpunkt (vorherige Messung, vor ca. 7 / 30 / 90 Tagen oder erste Messung).
+- Interaktive Verlaufsgrafik mit Zeitraum-Filter (30 Tage, 90 Tage, 1 Jahr, Alle), optionalem 7-Tage-Durchschnitt und Messpunkt-Tooltip per Fingertipp oder Mauszeiger.
 - Links-rechts-Vergleiche für Arme und Beine samt Differenzen; zusätzliche Ansichten für Rumpf und Viszeralfett.
 - Vier Themes: Nachtblau, Elfenbein, Café Latte und Neon.
 - Grundumsatz (BMR) und Leistungsumsatz (AMR) manuell ergänzen oder versuchsweise aus einem Screenshot erkennen; erkannte Werte vor dem Speichern bestätigen.
-- Ergänzte Messdaten wieder als CSV exportieren und lokale Daten löschen.
-- Responsive Darstellung für iPhone, Tablet und Desktop.
+- Ergänzte Messdaten wieder als CSV exportieren (inkl. dezenter Backup-Erinnerung), einzelne ausgewählte Messungen löschen oder alle lokalen Daten entfernen.
+- Responsive Darstellung für iPhone, Tablet und Desktop sowie Web-App-Manifest und iOS-Home-Screen-Icon (`manifest.json`, `sw.js`, PNG-Icons) für den Start vom Home-Bildschirm.
 
 Welche Werte tatsächlich verfügbar sind, hängt von der Waage, den CSV-Spalten und der Messung ab. **Nicht jeder in HealthManager Pro sichtbare Wert wird zwingend in der CSV exportiert.**
 
@@ -56,7 +57,7 @@ Die Repository-Adresse zeigt den Quellcode, während die GitHub-Pages-Adresse di
 
 ## Technik
 
-AtlasSometria besteht aus statischen Dateien (`index.html`, `styles.css`, `i18n.js`, `app.js` sowie `assets/`). Ein Build-System ist nicht erforderlich – die App lässt sich direkt über `file://` oder über einen einfachen HTTP-Server öffnen. Dateiimporte und OCR sollten auf den verwendeten Browsern praktisch getestet werden.
+AtlasSometria besteht aus statischen Dateien (`index.html`, `styles.css`, `i18n.js`, `app.js`, `manifest.json`, `sw.js` sowie `assets/`). Ein Build-System ist nicht erforderlich – die App lässt sich direkt über `file://` (der Service Worker wird dabei automatisch übersprungen) oder über einen einfachen HTTP-Server bzw. GitHub Pages öffnen. Dateiimporte und OCR sollten auf den verwendeten Browsern praktisch getestet werden.
 
 ## Lizenz
 

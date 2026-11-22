@@ -1,0 +1,32 @@
+{
+  "id": "./",
+  "name": "AtlasSometria · Body Composition Analytics",
+  "short_name": "Sometria",
+  "description": "Local, browser-based body-composition analytics dashboard for Beurer HealthManager Pro CSV exports.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#080f1e",
+  "background_color": "#080f1e",
+  "icons": [
+    {
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

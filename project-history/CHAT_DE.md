@@ -11,12 +11,12 @@
 
 ## Aktuelle Projektstruktur
 
-- `index.html` – statische Einstiegsseite mit `data-i18n`-Attributen und klassischen `<script defer>`-Einbindungen (`./i18n.js`, `./app.js`), weiterhin ohne Build-System offline per `file://` und über GitHub Pages nutzbar.
-- `styles.css` – Stylesheet mit Layout, responsiven Regeln und allen vier Farbschemata (Nachtblau, Elfenbein, Café Latte, Neon).
-- `i18n.js` – schlüsselbasiertes Englisch/Deutsch-Wörterbuch (`AtlasI18n`, Englisch als Standard, deutsche Beurer-CSV-Schlüssel bleiben intern unverändert).
-- `app.js` – Dashboard-Logik, CSV-Import/-Export, Diagramme, Segmentanalyse, manuelle BMR-/AMR-Eingabe und bedarfsweises Tesseract.js-OCR.
-- `assets/favicon.svg` – skalierbares Favicon.
-- `assets/logo.svg` – Logo für die Repository-Startseite.
+- `index.html` – statische Einstiegsseite mit `data-i18n`-Attributen, PWA-Manifest-/iOS-Icon-Verknüpfungen und klassischen `<script defer>`-Einbindungen (`./i18n.js`, `./app.js`), weiterhin ohne Build-System offline per `file://` und über GitHub Pages nutzbar.
+- `styles.css` – Stylesheet mit Layout, responsiven Regeln, interaktiven Diagramm-/Modal-Stilen und allen vier Farbschemata (Nachtblau, Elfenbein, Café Latte, Neon – bereinigt).
+- `i18n.js` – schlüsselbasiertes Englisch/Deutsch-Wörterbuch (`AtlasI18n`, 183 EN/DE-Schlüssel, Englisch als Standard, deutsche Beurer-CSV-Schlüssel bleiben intern unverändert).
+- `app.js` – Dashboard-Logik, CSV-Import/-Export, interaktive Verlaufsgrafik, Vergleichszeiträume, Segmentanalyse, manuelle BMR-/AMR-Eingabe, Backup-Erinnerung, PWA-Installationshilfe und bedarfsweises Tesseract.js-OCR.
+- `manifest.json` & `sw.js` – Web-App-Manifest und Network-First-Service-Worker für die statische App-Hülle (nur über HTTPS/localhost aktiv, auf `file://` übersprungen).
+- `assets/favicon.svg`, `assets/logo.svg`, `assets/apple-touch-icon.png`, `assets/icon-192.png`, `assets/icon-512.png`, `assets/icon-maskable-512.png` – Vektor- und PNG-App-Icons.
 - `README.md` und `README_DE.md` – englische und deutsche Dokumentation.
 - `AGENTS.md` – verbindliche Vorgaben zu Architektur, Datenschutz, Prüfung und Veröffentlichung.
 - `project-history/CHAT.md` – englisches Änderungs- und Übergabeprotokoll.
@@ -119,6 +119,23 @@ Vor einer Fertigmeldung:
 - Live-Deployment (URL und bestätigte Version): Live auf `https://schrotty74.github.io/AtlasSometria/` geprüft: `/`, `/styles.css`, `/i18n.js`, `/app.js` und `/assets/favicon.svg` lieferten jeweils HTTP 200 mit identischen SHA-256-Prüfsummen zu den Commits `3ea58e2a5` / `b82d94300`.
 - Nicht getestet / bekannte Einschränkungen: Offline-Start über `file://`, CSV-Export-/Reimport-Durchlauf, manuelle Kalorieneingabe im Browser, Screenshot-OCR in verschiedenen Browsern und vollständige mobile Regression wurden in diesem Durchgang nicht geprüft.
 - Commit(s): [`3ea58e2a5`](https://github.com/Schrotty74/AtlasSometria/commit/3ea58e2a5) (modularisierter App-Code), [`b82d94300`](https://github.com/Schrotty74/AtlasSometria/commit/b82d94300) (Dokumentations-Update) sowie Folge-Sync für dieses Live-Test-Protokoll.
+
+### 2026-11-22 – Interaktive Verlaufsgrafik, Vergleichszeiträume, Einzellöschung, Backup-Erinnerung, PWA-Support und Neon-CSS-Bereinigung
+- Auftrag/Ziel: Alle vorgeschlagenen Komfort-, Analyse- und iPhone-Verbesserungen vollständig umsetzen – weiterhin rein statisch, zweisprachig (EN/DE) und vollständig kompatibel zu bestehenden `localStorage`-Daten.
+- Ursache bzw. Ausgangszustand: Das Verlaufsdiagramm bot keinen Zeitraum-Filter, keinen Trend-Schnitt und keine Messpunkt-Tooltips; Karten verglichen nur mit der direkt vorherigen Messung; einzelne Fehlmessungen ließen sich nicht gezielt löschen; PWA-Manifest/PNG-Icons und Backup-Erinnerung fehlten; in `styles.css` lagen veraltete Neon-v1-Regeln doppelt vor.
+- Geänderte Dateien: `index.html`, `styles.css`, `i18n.js`, `app.js`, `manifest.json` (neu), `sw.js` (neu), `assets/apple-touch-icon.png` (neu), `assets/icon-192.png` (neu), `assets/icon-512.png` (neu), `assets/icon-maskable-512.png` (neu), `README.md`, `README_DE.md`, `project-history/CHAT.md`, `project-history/CHAT_DE.md`.
+- Umsetzung:
+  - Interaktive Verlaufsgrafik: Zeitraum-Filter (*Alle*, *30 Tage*, *90 Tage*, *1 Jahr*), zuschaltbarer 7-Tage-Durchschnitt (`computeMovingAverage`) mit Legende sowie Messpunkt-Tooltip per Fingertipp/Mauszeiger mit Fadenkreuz.
+  - Fortschrittsvergleich & Verwaltung: Vergleichs-Auswahl über den Karten (*Vorherige Messung*, *ca. 7 / 30 / 90 Tage*, *Erste Messung*) inkl. Anzeige des Vergleichsdatums; Button zum Löschen der einzelnen ausgewählten Messung (`#deleteSelectedBtn`) mit Bestätigung; Anzeige des importierten Zeitraums beim CSV-Import; automatischer Fokus im manuellen Kalorien-Dialog.
+  - Backup-Erinnerung: Additiver Metadaten-Schlüssel `atlassometria-backup-meta-v1` (ohne Änderungen an `atlassometria-local-v1`, `atlassometria-theme-v1` oder `atlassometria-language-v1`) für dezente Hinweise bei fehlendem oder veraltetem CSV-Backup.
+  - PWA- & iPhone-Home-Screen-Support: `manifest.json` (relative `./`-Pfade für GitHub Pages), Network-First-Service-Worker `sw.js` (nur HTTPS/localhost, auf `file://` übersprungen), gerenderte PNG-Icons (`180px`, `192px`, `512px`, `512px maskable`) auf Basis von `assets/favicon.svg` sowie In-App-Installationsbutton + zweisprachige iOS-Safari-Anleitung.
+  - CSS-Bereinigung: Redundanten Neon-v1-Block in `styles.css` entfernt, ohne das Erscheinungsbild der vier Themes zu verändern.
+- Datenschutzprüfung (konkret): Alle neuen/geänderten Dateien geprüft; keine persönlichen Messdaten, Benutzer-CSVs, Screenshots, Tokens oder lokalen Pfade; temporärer Upload-Ordner entfernt. Externe Netzwerkanfragen weiterhin ausschließlich optional bei Tesseract.js-OCR.
+- Syntax/Build (konkret): `node --check i18n.js`, `node --check app.js` und `node --check sw.js` ohne Fehler (Exit-Code 0); automatisiertes Node-Prüfskript bestand für `manifest.json` + PNG-Icons, 183/183 EN/DE-I18N-Schlüsselparität, alle 42 DOM-IDs sowie 68 HTML- und 71 JS-I18N-Schlüssel, `parseKcal()` (`1.850`, `2,450`, `1.850,5`, `1920`), synthetischen CSV-Import → Komma-Export → verlustfreien Re-Import, 7-Tage-Durchschnitt und Vergleichszeitpunkte (`prev`, `7d`, `30d`, `first`).
+- Funktionstest im Browser (Schritte und Ergebnis): Nach dieser Änderung noch nicht im echten Browser durchgeführt.
+- Live-Deployment (URL und bestätigte Version): Lokal im Arbeitsbereich bereit; noch nicht auf GitHub gepusht und nicht live auf GitHub Pages geprüft.
+- Nicht getestet / bekannte Einschränkungen: Interaktiver Browsertest (Diagramm-Tooltip am iPhone, 7-Tage-Linie in allen 4 Themes, Einzellöschung, Backup-Erinnerung, iOS-Home-Screen-Icon, `file://`, OCR) sowie Live-Prüfung nach Veröffentlichung stehen noch aus.
+- Commit(s): Ausstehend (Push durch Nutzer über AI-Studio-GitHub-Sync).
 
 ---
 

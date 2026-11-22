@@ -11,12 +11,12 @@
 
 ## Current project structure
 
-- `index.html` – static entry HTML with semantic markup, `data-i18n` hooks, and deferred classic scripts (`./i18n.js`, `./app.js`), usable offline via `file://` and on GitHub Pages without a build system.
-- `styles.css` – stylesheet containing layout, responsive rules, and all four color themes (Night Blue, Ivory, Café Latte, Neon).
-- `i18n.js` – key-based English/German translation dictionary (`AtlasI18n`, English default, German Beurer CSV keys preserved internally).
-- `app.js` – dashboard logic, CSV import/export, charts, segment analysis, manual BMR/AMR entry, and on-demand Tesseract.js OCR.
-- `assets/favicon.svg` – scalable browser favicon.
-- `assets/logo.svg` – logo shown on the repository home page.
+- `index.html` – static entry HTML with semantic markup, `data-i18n` hooks, PWA manifest/iOS icon links, and deferred classic scripts (`./i18n.js`, `./app.js`), usable offline via `file://` and on GitHub Pages without a build system.
+- `styles.css` – stylesheet containing layout, responsive rules, interactive chart/modal styles, and all four color themes (Night Blue, Ivory, Café Latte, Neon — deduplicated).
+- `i18n.js` – key-based English/German translation dictionary (`AtlasI18n`, 183 EN/DE keys, English default, German Beurer CSV keys preserved internally).
+- `app.js` – dashboard logic, CSV import/export, interactive trend chart, comparison baselines, segment analysis, manual BMR/AMR entry, backup reminder, PWA install helper, and on-demand Tesseract.js OCR.
+- `manifest.json` & `sw.js` – Web App Manifest and network-first static shell service worker (registered only on HTTPS/localhost, skipped on `file://`).
+- `assets/favicon.svg`, `assets/logo.svg`, `assets/apple-touch-icon.png`, `assets/icon-192.png`, `assets/icon-512.png`, `assets/icon-maskable-512.png` – vector & PNG app icons.
 - `README.md` and `README_DE.md` – English and German documentation.
 - `AGENTS.md` – binding architecture, privacy, testing, and publication instructions.
 - `project-history/CHAT.md` – this ongoing English change log and technical handoff.
@@ -120,6 +120,23 @@ Before reporting a change as complete:
 - Live deployment (URL and confirmed version): Verified live at `https://schrotty74.github.io/AtlasSometria/` after push: `/`, `/styles.css`, `/i18n.js`, `/app.js`, and `/assets/favicon.svg` all returned HTTP 200 with SHA-256 checksums identical to commits `3ea58e2a5` / `b82d94300`.
 - Not tested / known limitations: `file://` offline loading, CSV export/re-import round-trip, manual calorie entry in browser, screenshot OCR across browsers, and full mobile layout regression were not verified in this test pass.
 - Commit(s): [`3ea58e2a5`](https://github.com/Schrotty74/AtlasSometria/commit/3ea58e2a5) (modularized app code), [`b82d94300`](https://github.com/Schrotty74/AtlasSometria/commit/b82d94300) (documentation update), plus follow-up documentation sync for this live-test record.
+
+### 2026-11-22 – Interactive chart tools, comparison baselines, single-delete, backup reminder, PWA home-screen support, and Neon CSS cleanup
+- Request / objective: Implement the complete set of usability and iPhone-focused enhancements requested by the user while keeping the app purely static, bilingual (EN/DE), and backwards-compatible with existing `localStorage` data.
+- Root cause or starting state: Trend chart displayed all measurements without range filtering, smoothing, or point inspection; metric deltas only compared against the immediately preceding entry; only full wipe was supported (no single-measurement delete); no backup reminder or PWA manifest/PNG icons existed; `styles.css` still contained an obsolete Neon v1 block superseded by Neon v2.
+- Files changed: `index.html`, `styles.css`, `i18n.js`, `app.js`, `manifest.json` (new), `sw.js` (new), `assets/apple-touch-icon.png` (new), `assets/icon-192.png` (new), `assets/icon-512.png` (new), `assets/icon-maskable-512.png` (new), `README.md`, `README_DE.md`, `project-history/CHAT.md`, `project-history/CHAT_DE.md`.
+- Implementation:
+  - Interactive trend chart: Added time-range selector (`All`, `30 days`, `90 days`, `1 year`), toggleable 7-day rolling moving average (`computeMovingAverage`) with legend, and tap/hover canvas tooltips with crosshair highlighting.
+  - Comparison baselines & management: Added card comparison selector (`prev`, `~7d`, `~30d`, `~90d`, `first`) showing the matched baseline date; added single-measurement deletion (`#deleteSelectedBtn`) with confirmation; added imported date range to CSV import banner; added auto-focus on manual calorie modal open.
+  - Backup reminder: Added additive metadata key `atlassometria-backup-meta-v1` (without touching `atlassometria-local-v1`, `atlassometria-theme-v1`, or `atlassometria-language-v1`) to show a gentle export reminder when measurements are unbacked-up or outdated.
+  - PWA / iPhone home-screen support: Added `manifest.json` (relative `./` paths for GitHub Pages), network-first static shell `sw.js` (HTTPS/localhost only, skipped on `file://`), generated PNG icons (`180px`, `192px`, `512px`, `512px maskable`) from `assets/favicon.svg`, and added an in-app install button + localized iOS Safari Add-to-Home-Screen guide modal.
+  - CSS cleanup: Deduplicated redundant Neon v1 declarations in `styles.css` while preserving all four themes.
+- Privacy audit (specific): Audited all added/modified files; no personal measurements, user CSVs, screenshots, tokens, or local paths; temporary user screenshot staging folder removed. External network traffic remains strictly limited to on-demand Tesseract.js OCR.
+- Syntax/build check (specific): `node --check i18n.js`, `node --check app.js`, and `node --check sw.js` exited 0; automated Node suite verified `manifest.json` and PNG icon files, 183/183 EN/DE I18N key parity, all 42 DOM IDs and 68 HTML + 71 JS i18n keys, `parseKcal()` (`1.850`, `2,450`, `1.850,5`, `1920`), synthetic CSV import → comma-decimal export → lossless re-import round-trip, 7-day moving average math, and comparison baseline matching (`prev`, `7d`, `30d`, `first`).
+- Browser functional test (steps and result): Not yet performed in a real browser after this update.
+- Live deployment (URL and confirmed version): Local workspace ready; not yet pushed to GitHub or verified live on GitHub Pages.
+- Not tested / known limitations: Interactive browser test (chart tap tooltip on iPhone Safari, 7-day average visuals across all 4 themes, single-delete, backup reminder, iOS Add-to-Home-Screen icon, `file://` loading, OCR) and live GitHub Pages deployment verification remain open.
+- Commit(s): Pending user push via AI Studio GitHub sync.
 
 ---
 

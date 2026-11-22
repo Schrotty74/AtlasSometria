@@ -14,13 +14,14 @@ The application starts **without any preloaded, personal, or demonstration measu
 
 ## Features
 
-- Import Beurer HealthManager Pro weight/body-composition CSV exports.
-- View key metrics in customizable dashboard cards, chart panels, and history trends.
+- Import Beurer HealthManager Pro weight/body-composition CSV exports (including imported date-range summary).
+- View key metrics in customizable dashboard cards with selectable comparison baselines (previous measurement, ~7 / ~30 / ~90 days earlier, or first measurement).
+- Interactive history chart with time-range filter (30 days, 90 days, 1 year, all), optional 7-day moving average line, and tap/hover tooltips.
 - Compare left and right arms and legs, including differences; inspect trunk and visceral-fat readings.
 - Switch between four color themes: Night Blue, Ivory, Café Latte, and Neon.
 - Add basal and active metabolic rate (BMR/AMR) manually or attempt to recognize them from a measurement screenshot; always confirm recognized values.
-- Export enriched CSV data and clear locally saved measurements.
-- Responsive layout for phones, tablets, and desktop browsers.
+- Export enriched CSV data (with gentle local backup reminders), delete a single selected measurement, or clear all locally saved measurements.
+- Responsive layout for phones, tablets, and desktop browsers, plus Web App Manifest and iOS home-screen icon (`manifest.json`, `sw.js`, PNG icons) for standalone launch.
 
 Available values depend on the scale, the exported CSV columns, and the selected measurement. **Not every value displayed by HealthManager Pro is necessarily included in its CSV export.**
 
@@ -58,7 +59,7 @@ Opening the repository link itself shows source files; the GitHub Pages address 
 
 ## Development
 
-The app consists of static files (`index.html`, `styles.css`, `i18n.js`, `app.js`, and `assets/`). No build system or server is required — it can be opened directly via `file://` or served through any static HTTP server. Test browser file-import and OCR support on each intended platform.
+The app consists of static files (`index.html`, `styles.css`, `i18n.js`, `app.js`, `manifest.json`, `sw.js`, and `assets/`). No build system or server is required — it can be opened directly via `file://` (service worker registration is skipped automatically on `file://`) or served through any static HTTP server / GitHub Pages. Test browser file-import and OCR support on each intended platform.
 
 ## License
 

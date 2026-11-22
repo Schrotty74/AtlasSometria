@@ -9,6 +9,7 @@
  * - Measurements: localStorage['atlassometria-local-v1']
  * - Theme:        localStorage['atlassometria-theme-v1']
  * - Language:     localStorage['atlassometria-language-v1']
+ * - Backup meta:  localStorage['atlassometria-backup-meta-v1'] (additive reminder metadata)
  *
  * German Beurer CSV keys (Datum, Uhrzeit, Körperfett, etc.) are preserved
  * unchanged internally regardless of UI language.
@@ -19,7 +20,9 @@
 
   const STORAGE_KEY = 'atlassometria-local-v1';
   const THEME_KEY = 'atlassometria-theme-v1';
+  const BACKUP_META_KEY = 'atlassometria-backup-meta-v1';
   const THEME_NAMES = ['dark', 'ivory', 'latte', 'neon'];
+  const DAY_MS = 86400000;
 
   // Internal German Beurer CSV metric keys (never translated internally).
   const METRICS = [
@@ -62,12 +65,19 @@
   let rows = [];
   let selected = 0;
   let selectedSegment = 'Arme';
-  let currentMode = 'manual';
+  let compareMode = 'prev';
+  let chartRange = 'all';
+  let showMovingAvg = false;
+  let lastChartPoints = [];
+  let activeChartPointIdx = null;
   let activePreviewUrl = null;
   let storageUnavailable = false;
   let lastResultState = null;
   let lastOcrStatusState = null;
   let toastTimer = null;
+  let deferredInstallPrompt = null;
+  let isInstalledPwa = false;
+  let isIosBrowser = false;
 
   const $ = (id) => document.getElementById(id);
 
@@ -77,7 +87,6 @@
     if (raw === null || raw === undefined || String(raw).trim() === '') return null;
     let s = String(raw).trim().replace(/\s/g, '');
     if (s.includes(',') && s.includes('.')) {
-      // Determine whether '.' or ',' is the decimal separator based on last occurrence
       if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
         s = s.replace(/\./g, '').replace(',', '.');
       } else {
@@ -158,6 +167,90 @@
       (ICON_PATHS[name] || ICON_PATHS.bmi) +
       '</svg>'
     );
+  }
+
+  // --- Backup reminder metadata (additive, never touches measurement records) ---
+
+  function loadBackupMeta() {
+    try {
+      const raw = localStorage.getItem(BACKUP_META_KEY);
+      if (!raw) return { lastExportAt: null, changesSinceExport: 0 };
+      const parsed = JSON.parse(raw);
+      return {
+        lastExportAt: typeof parsed.lastExportAt === 'number' ? parsed.lastExportAt : null,
+        changesSinceExport:
+          typeof parsed.changesSinceExport === 'number' ? parsed.changesSinceExport : 0
+      };
+    } catch {
+      return { lastExportAt: null, changesSinceExport: 0 };
+    }
+  }
+
+  function saveBackupMeta(meta) {
+    try {
+      localStorage.setItem(BACKUP_META_KEY, JSON.stringify(meta));
+    } catch {
+      // Ignore unavailable storage
+    }
+  }
+
+  function recordDataChange(count) {
+    const meta = loadBackupMeta();
+    meta.changesSinceExport = (meta.changesSinceExport || 0) + Math.max(1, count || 1);
+    saveBackupMeta(meta);
+    renderBackupReminder();
+  }
+
+  function recordBackupExported() {
+    saveBackupMeta({ lastExportAt: Date.now(), changesSinceExport: 0 });
+    renderBackupReminder();
+  }
+
+  function renderBackupReminder() {
+    const el = $('backupReminder');
+    if (!el) return;
+    if (!rows.length) {
+      el.hidden = true;
+      el.textContent = '';
+      return;
+    }
+
+    const meta = loadBackupMeta();
+    const now = Date.now();
+    const daysSinceExport =
+      meta.lastExportAt !== null ? Math.floor((now - meta.lastExportAt) / DAY_MS) : null;
+
+    let message = '';
+    if (meta.lastExportAt === null && rows.length >= 3) {
+      message = t('backup.never', { count: rows.length });
+    } else if (daysSinceExport !== null && daysSinceExport >= 30) {
+      message = t('backup.old', {
+        days: daysSinceExport,
+        changes: meta.changesSinceExport || 0
+      });
+    } else if (meta.changesSinceExport >= 10) {
+      message = t('backup.changes', { changes: meta.changesSinceExport });
+    }
+
+    if (!message) {
+      el.hidden = true;
+      el.textContent = '';
+      return;
+    }
+
+    el.hidden = false;
+    el.textContent = '';
+
+    const span = document.createElement('span');
+    span.textContent = message;
+    el.appendChild(span);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn';
+    btn.textContent = t('backup.exportNow');
+    btn.addEventListener('click', exportEnrichedCsv);
+    el.appendChild(btn);
   }
 
   // --- UI feedback helpers ---
@@ -268,33 +361,96 @@
     select.value = METRICS.includes(prev) ? prev : 'kg';
   }
 
-  function previousValue(index, csvKey) {
-    for (let i = index - 1; i >= 0; i--) {
-      const v = getValue(rows[i], csvKey);
-      if (v !== null && Number.isFinite(v)) return v;
+  function findComparisonRow(index, csvKey, mode) {
+    if (index <= 0 || !rows[index]) return null;
+
+    if (mode === 'prev') {
+      for (let i = index - 1; i >= 0; i--) {
+        const v = getValue(rows[i], csvKey);
+        if (v !== null && Number.isFinite(v)) return rows[i];
+      }
+      return null;
     }
-    return null;
+
+    if (mode === 'first') {
+      for (let i = 0; i < index; i++) {
+        const v = getValue(rows[i], csvKey);
+        if (v !== null && Number.isFinite(v)) return rows[i];
+      }
+      return null;
+    }
+
+    const daysMap = { '7d': 7, '30d': 30, '90d': 90 };
+    const days = daysMap[mode];
+    if (!days) return findComparisonRow(index, csvKey, 'prev');
+
+    const targetTs = rowTimestamp(rows[index]) - days * DAY_MS;
+    let bestRow = null;
+    let bestDist = Infinity;
+
+    for (let i = 0; i < index; i++) {
+      const v = getValue(rows[i], csvKey);
+      if (v === null || !Number.isFinite(v)) continue;
+      const dist = Math.abs(rowTimestamp(rows[i]) - targetTs);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestRow = rows[i];
+      }
+    }
+    return bestRow;
   }
 
   function deltaInfo(index, csvKey) {
     const current = getValue(rows[index], csvKey);
-    const previous = previousValue(index, csvKey);
+    const baselineRow = findComparisonRow(index, csvKey, compareMode);
+    const previous = baselineRow ? getValue(baselineRow, csvKey) : null;
+
     if (current === null || previous === null) {
       return { cls: '', label: t('delta.none') };
     }
+
     const diff = current - previous;
+    const isPrev = compareMode === 'prev';
     if (Math.abs(diff) < 0.000001) {
-      return { cls: 'same', label: t('delta.same') };
+      return {
+        cls: 'same',
+        label: isPrev ? t('delta.same') : t('delta.sameDate', { date: baselineRow.date })
+      };
     }
+
     const u = unit(csvKey);
     const unitSuffix = u ? ' ' + u : '';
+    const key = isPrev
+      ? diff > 0
+        ? 'delta.up'
+        : 'delta.down'
+      : diff > 0
+        ? 'delta.upDate'
+        : 'delta.downDate';
+
     return {
       cls: diff > 0 ? 'up' : 'down',
-      label: t(diff > 0 ? 'delta.up' : 'delta.down', {
+      label: t(key, {
         diff: fmt(Math.abs(diff)),
-        unit: unitSuffix
+        unit: unitSuffix,
+        date: baselineRow.date
       })
     };
+  }
+
+  function computeMovingAverage(pts) {
+    // True 7-day rolling window (current day + preceding 6 days)
+    const windowMs = 6 * DAY_MS;
+    return pts.map((pt, i) => {
+      let sum = 0;
+      let count = 0;
+      for (let j = i; j >= 0; j--) {
+        if (pt.x - pts[j].x > windowMs) break;
+        sum += pts[j].y;
+        count++;
+      }
+      return count > 0 ? sum / count : pt.y;
+    });
   }
 
   function sparkline(csvKey, index) {
@@ -373,12 +529,21 @@
     if (selectedSegment === 'Arme' || selectedSegment === 'Beine') {
       s.innerHTML = '<p class="segment-summary">' + t('segments.summary') + '</p>';
     } else {
-      // Trunk and Visceral already show all values directly inside their cards.
       s.innerHTML = '';
     }
   }
 
   function render() {
+    const compareBar = $('compareBar');
+    if (compareBar) {
+      compareBar.hidden = rows.length < 2;
+    }
+
+    const delBtn = $('deleteSelectedBtn');
+    if (delBtn) {
+      delBtn.disabled = !rows.length;
+    }
+
     if (!rows.length) {
       $('statusTiles').innerHTML = '';
       $('cards').innerHTML =
@@ -388,6 +553,8 @@
       });
       $('dateSelect').innerHTML = '';
       updateDataStatus();
+      renderBackupReminder();
+      activeChartPointIdx = null;
       draw();
       return;
     }
@@ -657,10 +824,88 @@
         .join('');
 
     updateDataStatus();
+    renderBackupReminder();
     draw();
   }
 
-  // --- Canvas trend chart ---
+  // --- Interactive Canvas trend chart (range filter, 7-day moving average, tap/hover tooltip) ---
+
+  function hideChartTooltip() {
+    const tt = $('chartTooltip');
+    if (tt) tt.hidden = true;
+  }
+
+  function renderChartTooltip(pt, canvasWidth) {
+    const tt = $('chartTooltip');
+    if (!tt || !pt) {
+      hideChartTooltip();
+      return;
+    }
+
+    tt.textContent = '';
+    const dateLine = document.createElement('div');
+    dateLine.className = 'tt-sub';
+    dateLine.textContent = pt.date + ' · ' + pt.time;
+    tt.appendChild(dateLine);
+
+    const valLine = document.createElement('strong');
+    valLine.textContent = fmt(pt.y, 1) + pt.unitSuffix;
+    tt.appendChild(valLine);
+
+    if (showMovingAvg && Number.isFinite(pt.ma7)) {
+      const maLine = document.createElement('div');
+      maLine.className = 'tt-sub';
+      maLine.textContent = t('chart.tooltipMa7', {
+        value: fmt(pt.ma7, 1),
+        unit: pt.unitSuffix
+      });
+      tt.appendChild(maLine);
+    }
+
+    tt.hidden = false;
+
+    const ttWidth = tt.offsetWidth || 150;
+    const ttHeight = tt.offsetHeight || 54;
+    let leftPos = pt.xPx + 12;
+    if (leftPos + ttWidth > canvasWidth - 6) {
+      leftPos = Math.max(6, pt.xPx - ttWidth - 12);
+    }
+    let topPos = pt.yPx - ttHeight - 10;
+    if (topPos < 6) {
+      topPos = Math.min(200, pt.yPx + 12);
+    }
+    tt.style.left = leftPos.toFixed(0) + 'px';
+    tt.style.top = topPos.toFixed(0) + 'px';
+  }
+
+  function renderChartLegend(hasData) {
+    const legend = $('chartLegend');
+    if (!legend) return;
+    if (!hasData || !showMovingAvg) {
+      legend.hidden = true;
+      legend.textContent = '';
+      return;
+    }
+    legend.hidden = false;
+    legend.textContent = '';
+
+    const item1 = document.createElement('span');
+    item1.className = 'legend-item';
+    const sw1 = document.createElement('span');
+    sw1.className = 'legend-swatch';
+    item1.appendChild(sw1);
+    item1.appendChild(document.createTextNode(t('chart.legendValue')));
+
+    const item2 = document.createElement('span');
+    item2.className = 'legend-item';
+    const sw2 = document.createElement('span');
+    sw2.className = 'legend-swatch ma';
+    item2.appendChild(sw2);
+    item2.appendChild(document.createTextNode(t('chart.legendMa7')));
+
+    legend.appendChild(item1);
+    legend.appendChild(item2);
+  }
 
   function draw() {
     const palette = getComputedStyle(document.documentElement);
@@ -681,18 +926,52 @@
     ctx.clearRect(0, 0, w, h);
 
     const k = $('metricSelect').value || 'kg';
-    const pts = rows
-      .map((r) => ({ x: rowTimestamp(r), y: getValue(r, k) }))
+    const allPts = rows
+      .map((r) => ({
+        x: rowTimestamp(r),
+        y: getValue(r, k),
+        date: r.date,
+        time: r.time
+      }))
       .filter((p) => p.y !== null && Number.isFinite(p.y));
 
-    $('chartNote').textContent =
-      pts.length === 1
-        ? t('chart.single')
-        : pts.length
-          ? t('chart.points', { count: pts.length, metric: I18N.metricLabel(k) })
-          : t('chart.noValues');
+    const allMa7 = computeMovingAverage(allPts);
+    allPts.forEach((p, idx) => {
+      p.ma7 = allMa7[idx];
+    });
+
+    let pts = allPts;
+    if (chartRange !== 'all' && allPts.length) {
+      const rangeDays = Number(chartRange);
+      const anchorTs = allPts[allPts.length - 1].x;
+      const cutoff = anchorTs - rangeDays * DAY_MS;
+      pts = allPts.filter((p) => p.x >= cutoff);
+    }
+
+    if (!allPts.length) {
+      $('chartNote').textContent = t('chart.noValues');
+    } else if (!pts.length) {
+      $('chartNote').textContent = t('chart.noValuesInRange');
+    } else if (pts.length === 1) {
+      $('chartNote').textContent = t('chart.single');
+    } else if (pts.length < allPts.length) {
+      $('chartNote').textContent = t('chart.pointsInRange', {
+        count: pts.length,
+        total: allPts.length,
+        metric: I18N.metricLabel(k)
+      });
+    } else {
+      $('chartNote').textContent = t('chart.points', {
+        count: pts.length,
+        metric: I18N.metricLabel(k)
+      });
+    }
 
     if (!pts.length) {
+      lastChartPoints = [];
+      activeChartPointIdx = null;
+      hideChartTooltip();
+      renderChartLegend(false);
       ctx.font = '13px -apple-system,sans-serif';
       ctx.fillStyle = chartColor('--chart-blank', '#9db0c5');
       ctx.fillText(t('chart.noData'), 15, 140);
@@ -700,6 +979,11 @@
     }
 
     const ys = pts.map((p) => p.y);
+    if (showMovingAvg) {
+      pts.forEach((p) => {
+        if (Number.isFinite(p.ma7)) ys.push(p.ma7);
+      });
+    }
     const lo = Math.min(...ys);
     const hi = Math.max(...ys);
     const padding = Math.max((hi - lo) * 0.25, Math.max(Math.abs(hi) * 0.03, 0.3));
@@ -728,8 +1012,8 @@
     let xmin = Math.min(...xs);
     let xmax = Math.max(...xs);
     if (xmax === xmin) {
-      xmin -= 86400000;
-      xmax += 86400000;
+      xmin -= DAY_MS;
+      xmax += DAY_MS;
     }
 
     const X = (v) => left + ((v - xmin) / (xmax - xmin)) * (right - left);
@@ -764,11 +1048,119 @@
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    pts.forEach((p) => {
+    if (showMovingAvg && pts.length > 1) {
+      ctx.save();
       ctx.beginPath();
-      ctx.arc(X(p.x), Y(p.y), 4.5, 0, Math.PI * 2);
-      ctx.fillStyle = chartColor('--chart-dot', '#9be7ae');
+      ctx.setLineDash([6, 4]);
+      pts.forEach((p, i) =>
+        i ? ctx.lineTo(X(p.x), Y(p.ma7)) : ctx.moveTo(X(p.x), Y(p.ma7))
+      );
+      ctx.strokeStyle = chartColor('--amber', '#ffc77c');
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    const u = unit(k);
+    const unitSuffix = u ? ' ' + u : '';
+
+    lastChartPoints = pts.map((p) => ({
+      xPx: X(p.x),
+      yPx: Y(p.y),
+      date: p.date,
+      time: p.time,
+      y: p.y,
+      ma7: p.ma7,
+      unitSuffix: unitSuffix
+    }));
+
+    if (activeChartPointIdx !== null && activeChartPointIdx >= lastChartPoints.length) {
+      activeChartPointIdx = null;
+    }
+
+    // Optional crosshair for active hovered/tapped point
+    if (activeChartPointIdx !== null && lastChartPoints[activeChartPointIdx]) {
+      const ap = lastChartPoints[activeChartPointIdx];
+      ctx.save();
+      ctx.beginPath();
+      ctx.setLineDash([3, 3]);
+      ctx.moveTo(ap.xPx, top);
+      ctx.lineTo(ap.xPx, bot);
+      ctx.strokeStyle = chartColor('--cyan', '#66e5e6');
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    lastChartPoints.forEach((p, idx) => {
+      const isActive = idx === activeChartPointIdx;
+      ctx.beginPath();
+      ctx.arc(p.xPx, p.yPx, isActive ? 6.5 : 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = isActive
+        ? chartColor('--cyan', '#66e5e6')
+        : chartColor('--chart-dot', '#9be7ae');
       ctx.fill();
+      if (isActive) {
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = chartColor('--txt', '#ffffff');
+        ctx.stroke();
+      }
+    });
+
+    renderChartLegend(pts.length > 1);
+
+    if (activeChartPointIdx !== null && lastChartPoints[activeChartPointIdx]) {
+      renderChartTooltip(lastChartPoints[activeChartPointIdx], w);
+    } else {
+      hideChartTooltip();
+    }
+  }
+
+  function findNearestChartPoint(clientX, clientY) {
+    const canvas = $('trend');
+    if (!canvas || !lastChartPoints.length) return null;
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    let bestIdx = null;
+    let bestDist = Infinity;
+    lastChartPoints.forEach((pt, idx) => {
+      const dx = pt.xPx - x;
+      const dy = pt.yPx - y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = idx;
+      }
+    });
+
+    return bestDist <= 42 ? bestIdx : null;
+  }
+
+  const trendCanvas = $('trend');
+  if (trendCanvas) {
+    trendCanvas.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'touch') return;
+      const idx = findNearestChartPoint(e.clientX, e.clientY);
+      if (idx !== activeChartPointIdx) {
+        activeChartPointIdx = idx;
+        draw();
+      }
+    });
+
+    trendCanvas.addEventListener('pointerleave', (e) => {
+      if (e.pointerType === 'touch') return;
+      if (activeChartPointIdx !== null) {
+        activeChartPointIdx = null;
+        draw();
+      }
+    });
+
+    trendCanvas.addEventListener('click', (e) => {
+      const idx = findNearestChartPoint(e.clientX, e.clientY);
+      activeChartPointIdx = idx === activeChartPointIdx ? null : idx;
+      draw();
     });
   }
 
@@ -809,63 +1201,7 @@
     return output;
   }
 
-  $('csvFile').addEventListener('change', async (e) => {
-    const f = e.target.files && e.target.files[0];
-    if (!f) return;
-
-    showResult('import.readingTitle', [{ key: 'import.readingDetail', vars: { file: f.name } }]);
-
-    try {
-      const incoming = parseCSV(await f.text());
-      let added = 0;
-      let updated = 0;
-      let changedFields = 0;
-
-      for (const r of incoming) {
-        const existing = rows.find((v) => rowKey(v) === rowKey(r));
-        if (existing) {
-          for (const [k, v] of Object.entries(r.values)) {
-            if (existing.values[k] !== v) changedFields++;
-          }
-          existing.values = Object.assign({}, existing.values, r.values);
-          updated++;
-        } else {
-          rows.push(r);
-          added++;
-          changedFields += Object.keys(r.values).length;
-        }
-      }
-
-      rows.sort((a, b) => rowTimestamp(a) - rowTimestamp(b));
-      const lastIncoming = incoming[incoming.length - 1];
-      selected = rows.findIndex((v) => rowKey(v) === rowKey(lastIncoming));
-      if (selected < 0) selected = rows.length - 1;
-
-      save();
-      render();
-
-      const same = added === 0 && changedFields === 0;
-      showResult('import.doneTitle', [
-        {
-          key: same ? 'import.doneSame' : 'import.doneChanged',
-          vars: { added: added, updated: updated }
-        },
-        {
-          key: 'import.doneTotal',
-          vars: { total: rows.length }
-        }
-      ]);
-      toast(t('import.toastDone'));
-    } catch (err) {
-      const msg = err && err.message ? String(err.message) : String(err);
-      showResult('import.failTitle', [msg]);
-      toast(t('import.failAlert', { message: msg }));
-    } finally {
-      e.target.value = '';
-    }
-  });
-
-  $('exportBtn').addEventListener('click', () => {
+  function exportEnrichedCsv() {
     if (!rows.length) {
       toast(t('export.empty'));
       return;
@@ -908,7 +1244,105 @@
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+    recordBackupExported();
     toast(t('export.done'));
+  }
+
+  $('csvFile').addEventListener('change', async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+
+    showResult('import.readingTitle', [{ key: 'import.readingDetail', vars: { file: f.name } }]);
+
+    try {
+      const incoming = parseCSV(await f.text());
+      incoming.sort((a, b) => rowTimestamp(a) - rowTimestamp(b));
+
+      let added = 0;
+      let updated = 0;
+      let changedFields = 0;
+
+      for (const r of incoming) {
+        const existing = rows.find((v) => rowKey(v) === rowKey(r));
+        if (existing) {
+          for (const [k, v] of Object.entries(r.values)) {
+            if (existing.values[k] !== v) changedFields++;
+          }
+          existing.values = Object.assign({}, existing.values, r.values);
+          updated++;
+        } else {
+          rows.push(r);
+          added++;
+          changedFields += Object.keys(r.values).length;
+        }
+      }
+
+      rows.sort((a, b) => rowTimestamp(a) - rowTimestamp(b));
+      const lastIncoming = incoming[incoming.length - 1];
+      selected = rows.findIndex((v) => rowKey(v) === rowKey(lastIncoming));
+      if (selected < 0) selected = rows.length - 1;
+      activeChartPointIdx = null;
+
+      save();
+      if (added > 0 || changedFields > 0) {
+        recordDataChange(Math.max(1, added));
+      }
+      render();
+
+      const same = added === 0 && changedFields === 0;
+      const lines = [
+        {
+          key: same ? 'import.doneSame' : 'import.doneChanged',
+          vars: { added: added, updated: updated }
+        }
+      ];
+      if (incoming.length) {
+        lines.push({
+          key: 'import.doneRange',
+          vars: {
+            from: incoming[0].date,
+            to: incoming[incoming.length - 1].date
+          }
+        });
+      }
+      lines.push({
+        key: 'import.doneTotal',
+        vars: { total: rows.length }
+      });
+
+      showResult('import.doneTitle', lines);
+      toast(t('import.toastDone'));
+    } catch (err) {
+      const msg = err && err.message ? String(err.message) : String(err);
+      showResult('import.failTitle', [msg]);
+      toast(t('import.failAlert', { message: msg }));
+    } finally {
+      e.target.value = '';
+    }
+  });
+
+  $('exportBtn').addEventListener('click', exportEnrichedCsv);
+
+  $('deleteSelectedBtn').addEventListener('click', () => {
+    if (!rows.length || !rows[selected]) {
+      toast(t('deleteSelected.empty'));
+      return;
+    }
+    const target = rows[selected];
+    if (
+      !window.confirm(
+        t('deleteSelected.confirm', { date: target.date, time: target.time })
+      )
+    ) {
+      return;
+    }
+    rows.splice(selected, 1);
+    if (selected >= rows.length) selected = Math.max(0, rows.length - 1);
+    activeChartPointIdx = null;
+    save();
+    recordDataChange(1);
+    render();
+    toast(t('deleteSelected.done', { date: target.date, time: target.time }));
   });
 
   $('clearBtn').addEventListener('click', () => {
@@ -920,6 +1354,7 @@
       // Ignore unavailable storage
     }
     selected = 0;
+    activeChartPointIdx = null;
     lastResultState = null;
     $('importResult').hidden = true;
     render();
@@ -946,7 +1381,6 @@
       toast(t('edit.needCsv'));
       return false;
     }
-    currentMode = mode;
     $('editModal').classList.add('show');
     $('editDate').innerHTML = rows
       .map(
@@ -967,6 +1401,12 @@
     revokePreviewUrl();
     $('preview').classList.add('hide');
     $('preview').removeAttribute('src');
+    if (mode === 'manual') {
+      setTimeout(() => {
+        const bmrEl = $('bmr');
+        if (bmrEl) bmrEl.focus();
+      }, 30);
+    }
     return true;
   }
 
@@ -977,6 +1417,14 @@
     revokePreviewUrl();
   }
 
+  function openInstallModal() {
+    $('installModal').classList.add('show');
+  }
+
+  function closeInstallModal() {
+    $('installModal').classList.remove('show');
+  }
+
   $('editDate').addEventListener('change', fillEdit);
   $('manualBtn').addEventListener('click', () => openEdit('manual'));
   $('closeModal').addEventListener('click', closeEdit);
@@ -984,10 +1432,17 @@
   $('editModal').addEventListener('click', (e) => {
     if (e.target === $('editModal')) closeEdit();
   });
+
+  $('closeInstallModal').addEventListener('click', closeInstallModal);
+  $('doneInstallModal').addEventListener('click', closeInstallModal);
+  $('installModal').addEventListener('click', (e) => {
+    if (e.target === $('installModal')) closeInstallModal();
+  });
+
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && $('editModal').classList.contains('show')) {
-      closeEdit();
-    }
+    if (e.key !== 'Escape') return;
+    if ($('editModal').classList.contains('show')) closeEdit();
+    if ($('installModal').classList.contains('show')) closeInstallModal();
   });
 
   $('saveKcal').addEventListener('click', () => {
@@ -1015,6 +1470,7 @@
 
     selected = idx;
     save();
+    recordDataChange(1);
     render();
     closeEdit();
     toast(t('edit.savedToast'));
@@ -1084,7 +1540,6 @@
     e.target.value = '';
     if (!f) return;
 
-    // Abort immediately if no CSV measurements exist yet (prevents loading OCR while modal is closed).
     if (!rows.length) {
       toast(t('edit.needCsv'));
       return;
@@ -1134,6 +1589,82 @@
     }
   });
 
+  // --- PWA install button & service worker registration ---
+
+  function updateInstallButton() {
+    const btn = $('installBtn');
+    if (!btn) return;
+    if (isInstalledPwa) {
+      btn.hidden = true;
+      return;
+    }
+    if (deferredInstallPrompt) {
+      btn.hidden = false;
+      btn.textContent = t('actions.installApp');
+      return;
+    }
+    if (isIosBrowser) {
+      btn.hidden = false;
+      btn.textContent = t('actions.installAppIos');
+      return;
+    }
+    btn.hidden = true;
+  }
+
+  function initPwa() {
+    isInstalledPwa =
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+      window.navigator.standalone === true;
+
+    const ua = (window.navigator.userAgent || '').toLowerCase();
+    isIosBrowser =
+      /iphone|ipad|ipod/.test(ua) ||
+      (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      updateInstallButton();
+    });
+
+    window.addEventListener('appinstalled', () => {
+      isInstalledPwa = true;
+      deferredInstallPrompt = null;
+      updateInstallButton();
+      toast(t('install.installedToast'));
+    });
+
+    const btn = $('installBtn');
+    if (btn) {
+      btn.addEventListener('click', async () => {
+        if (deferredInstallPrompt) {
+          await deferredInstallPrompt.prompt();
+          const choice = await deferredInstallPrompt.userChoice;
+          if (choice && choice.outcome === 'accepted') {
+            isInstalledPwa = true;
+            deferredInstallPrompt = null;
+            updateInstallButton();
+          }
+        } else if (isIosBrowser) {
+          openInstallModal();
+        }
+      });
+    }
+
+    // Register service worker only over HTTPS or localhost (keeps file:// clean)
+    const isSecureOrigin =
+      window.location.protocol === 'https:' ||
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1';
+    if ('serviceWorker' in navigator && isSecureOrigin) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {
+        // Non-fatal: app works identically without service worker
+      });
+    }
+
+    updateInstallButton();
+  }
+
   // --- Segment interaction ---
 
   $('segments').addEventListener('click', (e) => {
@@ -1163,7 +1694,27 @@
     render();
   });
 
-  $('metricSelect').addEventListener('change', draw);
+  $('compareSelect').addEventListener('change', (e) => {
+    compareMode = e.target.value || 'prev';
+    render();
+  });
+
+  $('metricSelect').addEventListener('change', () => {
+    activeChartPointIdx = null;
+    draw();
+  });
+
+  $('rangeSelect').addEventListener('change', (e) => {
+    chartRange = e.target.value || 'all';
+    activeChartPointIdx = null;
+    draw();
+  });
+
+  $('maToggle').addEventListener('change', (e) => {
+    showMovingAvg = Boolean(e.target.checked);
+    draw();
+  });
+
   window.addEventListener('resize', draw);
 
   function applyTheme(theme) {
@@ -1189,6 +1740,7 @@
     $('languageSelect').value = activeLang;
     I18N.applyStaticTranslations(document);
     populateMetricSelect();
+    updateInstallButton();
     render();
     if (lastResultState) renderResultBanner();
     if (lastOcrStatusState && $('editModal').classList.contains('show')) {
@@ -1209,6 +1761,7 @@
   }
 
   load();
+  initPwa();
   populateMetricSelect();
   applyLanguage(I18N.getLang());
   applyTheme(storedTheme);

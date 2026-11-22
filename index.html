@@ -3,12 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <meta name="theme-color" content="#0b1524" />
+    <meta name="theme-color" content="#080f1e" />
     <meta name="application-name" content="AtlasSometria" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="AtlasSometria" />
     <meta
       name="description"
-      content="Body Composition Analytics — a local, browser-based dashboard for Beurer HealthManager Pro CSV exports with offline support, bilingual EN/DE UI, four themes, trends, segment analysis, and optional screenshot OCR."
+      content="Body Composition Analytics — a local, browser-based dashboard for Beurer HealthManager Pro CSV exports with bilingual EN/DE UI, four themes, trends, segment analysis, and optional screenshot OCR."
     />
     <meta property="og:title" content="AtlasSometria · Body Composition Analytics" />
     <meta
@@ -17,8 +20,10 @@
     />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <link rel="manifest" href="./manifest.json" />
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
     <link rel="shortcut icon" href="./assets/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png" />
     <title>AtlasSometria · Body Composition Analytics</title>
     <link rel="stylesheet" href="./styles.css" />
     <script defer src="./i18n.js"></script>
@@ -56,6 +61,15 @@
               data-i18n-aria-label="actions.readScreenshotAria"
             />
           </label>
+          <button
+            class="btn"
+            id="installBtn"
+            type="button"
+            hidden
+            data-i18n="actions.installApp"
+          >
+            ↓ Install app
+          </button>
         </div>
 
         <div class="theme-picker">
@@ -80,6 +94,21 @@
 
       <div id="importResult" class="import-result" role="status" aria-live="polite" hidden></div>
 
+      <div id="compareBar" class="compare-bar" hidden>
+        <label for="compareSelect" data-i18n="compare.label">Compare cards with</label>
+        <select
+          id="compareSelect"
+          aria-label="Comparison baseline"
+          data-i18n-aria-label="compare.aria"
+        >
+          <option value="prev" data-i18n="compare.prev">Previous measurement</option>
+          <option value="7d" data-i18n="compare.7d">~7 days earlier</option>
+          <option value="30d" data-i18n="compare.30d">~30 days earlier</option>
+          <option value="90d" data-i18n="compare.90d">~90 days earlier</option>
+          <option value="first" data-i18n="compare.first">First measurement</option>
+        </select>
+      </div>
+
       <section class="grid summary" id="cards"></section>
 
       <section
@@ -101,22 +130,40 @@
             data-i18n-aria-label="trends.metricAria"
           ></select>
           <select
+            id="rangeSelect"
+            aria-label="Time range"
+            data-i18n-aria-label="trends.rangeAria"
+          >
+            <option value="all" data-i18n="trends.rangeAll">All dates</option>
+            <option value="30" data-i18n="trends.range30">30 days</option>
+            <option value="90" data-i18n="trends.range90">90 days</option>
+            <option value="365" data-i18n="trends.range365">1 year</option>
+          </select>
+          <select
             id="dateSelect"
             aria-label="Selected measurement"
             data-i18n-aria-label="trends.dateAria"
           ></select>
+          <label class="chart-toggle">
+            <input id="maToggle" type="checkbox" />
+            <span data-i18n="trends.ma7">7-day average</span>
+          </label>
         </div>
       </div>
 
       <div class="grid layout">
         <section class="panel">
-          <canvas
-            id="trend"
-            class="chart"
-            aria-label="Measurement history chart"
-            data-i18n-aria-label="trends.chartAria"
-            role="img"
-          ></canvas>
+          <div class="chart-wrap">
+            <canvas
+              id="trend"
+              class="chart"
+              aria-label="Measurement history chart"
+              data-i18n-aria-label="trends.chartAria"
+              role="img"
+            ></canvas>
+            <div id="chartTooltip" class="chart-tooltip" role="status" hidden></div>
+          </div>
+          <div id="chartLegend" class="legend" hidden></div>
           <p class="chart-caption" id="chartNote"></p>
         </section>
         <section class="panel">
@@ -170,17 +217,26 @@
 
       <section class="panel">
         <div class="importer">
-          <button class="btn" id="manualBtn" data-i18n="manage.manualBtn">
+          <button class="btn" id="manualBtn" type="button" data-i18n="manage.manualBtn">
             ＋ Enter calorie values manually
           </button>
-          <button class="btn" id="exportBtn" data-i18n="manage.exportBtn">
+          <button class="btn" id="exportBtn" type="button" data-i18n="manage.exportBtn">
             ↓ Export enriched CSV
           </button>
-          <button class="btn warn" id="clearBtn" data-i18n="manage.clearBtn">
+          <button
+            class="btn warn"
+            id="deleteSelectedBtn"
+            type="button"
+            data-i18n="manage.deleteSelectedBtn"
+          >
+            Delete selected measurement
+          </button>
+          <button class="btn warn" id="clearBtn" type="button" data-i18n="manage.clearBtn">
             Clear all local data
           </button>
         </div>
         <p id="dataStatus" class="status"></p>
+        <div id="backupReminder" class="backup-reminder" role="status" hidden></div>
         <p class="notice" data-i18n="manage.notice">
           The Beurer CSV may omit basal and active metabolic rate. You can read these two values from
           a screenshot and link them to a measurement. The OCR library is downloaded on demand; image
@@ -202,6 +258,7 @@
           <button
             class="btn"
             id="closeModal"
+            type="button"
             aria-label="Close"
             data-i18n-aria-label="modal.closeAria"
           >
@@ -248,8 +305,48 @@
           </label>
         </div>
         <div class="actions">
-          <button class="btn primary" id="saveKcal" data-i18n="modal.apply">Apply values</button>
-          <button class="btn" id="cancelModal" data-i18n="modal.cancel">Cancel</button>
+          <button class="btn primary" id="saveKcal" type="button" data-i18n="modal.apply">
+            Apply values
+          </button>
+          <button class="btn" id="cancelModal" type="button" data-i18n="modal.cancel">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal"
+      id="installModal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="installModalTitle"
+    >
+      <div class="dialog">
+        <div class="top">
+          <h2 id="installModalTitle" data-i18n="install.iosTitle">Add AtlasSometria to Home Screen</h2>
+          <button
+            class="btn"
+            id="closeInstallModal"
+            type="button"
+            aria-label="Close"
+            data-i18n-aria-label="modal.closeAria"
+          >
+            ✕
+          </button>
+        </div>
+        <p data-i18n="install.iosIntro">
+          Install AtlasSometria on your iPhone or iPad for full-screen launch and quick access:
+        </p>
+        <ol class="install-steps">
+          <li data-i18n="install.iosStep1">Tap the Share button in Safari's toolbar.</li>
+          <li data-i18n="install.iosStep2">Scroll down and choose “Add to Home Screen”.</li>
+          <li data-i18n="install.iosStep3">Confirm by tapping “Add” in the top right.</li>
+        </ol>
+        <div class="actions">
+          <button class="btn primary" id="doneInstallModal" type="button" data-i18n="install.done">
+            Got it
+          </button>
         </div>
       </div>
     </div>

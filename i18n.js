@@ -21,6 +21,8 @@
       'actions.importCsvAria': 'Choose CSV file',
       'actions.readScreenshot': '▧ Read screenshot',
       'actions.readScreenshotAria': 'Choose screenshot',
+      'actions.installApp': '↓ Install app',
+      'actions.installAppIos': '＋ Add to Home Screen',
       'theme.label': 'Color theme',
       'theme.aria': 'Choose color theme',
       'theme.dark': 'Night Blue (default)',
@@ -29,13 +31,28 @@
       'theme.neon': 'Neon',
       'lang.label': 'Language / Sprache',
 
+      // Comparison baseline selector
+      'compare.label': 'Compare cards with',
+      'compare.aria': 'Comparison baseline',
+      'compare.prev': 'Previous measurement',
+      'compare.7d': '~7 days earlier',
+      'compare.30d': '~30 days earlier',
+      'compare.90d': '~90 days earlier',
+      'compare.first': 'First measurement',
+
       // Section headings
       'status.sectionAria': 'Additional measurements and trends',
       'trends.title': 'Trends',
       'trends.subtitle': 'Trends from your imported measurements',
       'trends.metricAria': 'Chart metric',
+      'trends.rangeAria': 'Time range',
+      'trends.rangeAll': 'All dates',
+      'trends.range30': '30 days',
+      'trends.range90': '90 days',
+      'trends.range365': '1 year',
       'trends.dateAria': 'Selected measurement',
       'trends.chartAria': 'Measurement history chart',
+      'trends.ma7': '7-day average',
       'composition.label': 'Body composition',
       'composition.note': 'These percentages represent different metrics and do not add up to 100%.',
 
@@ -74,6 +91,7 @@
       'manage.subtitle': 'You stay in control of your measurements',
       'manage.manualBtn': '＋ Enter calorie values manually',
       'manage.exportBtn': '↓ Export enriched CSV',
+      'manage.deleteSelectedBtn': 'Delete selected measurement',
       'manage.clearBtn': 'Clear all local data',
       'manage.notice': "The Beurer CSV may omit basal and active metabolic rate. You can read these two values from a screenshot and link them to a measurement. The OCR library is downloaded on demand; image processing runs in the browser and the image is not sent to this app's server.",
       'footer.text': 'AtlasSometria · Private browser-based web app · Scale readings are estimates, not medical diagnoses. Data is stored only in your browser (if local storage is enabled). Clearing browser data may remove it; export enriched CSV backups regularly.',
@@ -90,25 +108,46 @@
       'modal.apply': 'Apply values',
       'modal.cancel': 'Cancel',
 
+      // iOS install guide modal
+      'install.iosTitle': 'Add AtlasSometria to Home Screen',
+      'install.iosIntro': 'Install AtlasSometria on your iPhone or iPad for full-screen launch and quick access:',
+      'install.iosStep1': "Tap the Share button in Safari's toolbar.",
+      'install.iosStep2': 'Scroll down and choose “Add to Home Screen”.',
+      'install.iosStep3': 'Confirm by tapping “Add” in the top right.',
+      'install.done': 'Got it',
+      'install.installedToast': 'AtlasSometria was installed.',
+
       // Dynamic dashboard states
       'empty.state': 'No measurements yet. Import a Beurer CSV.',
       'delta.none': 'No comparison yet',
       'delta.same': '→ Unchanged since previous measurement',
       'delta.up': '↑ +{diff}{unit} since previous measurement',
       'delta.down': '↓ −{diff}{unit} since previous measurement',
+      'delta.sameDate': '→ Unchanged vs. {date}',
+      'delta.upDate': '↑ +{diff}{unit} vs. {date}',
+      'delta.downDate': '↓ −{diff}{unit} vs. {date}',
       'spark.minTwo': 'Trend available from 2 measurements',
       'spark.aria': 'Trend over the last {count} measurements',
 
-      // Chart notes
+      // Chart notes & tooltips
       'chart.single': 'Only one measurement so far — import more CSV files to see trends.',
-      'chart.points': '{count} data points · {metric}',
+      'chart.points': '{count} data points · {metric} · Tap or hover points for details',
+      'chart.pointsInRange': '{count} of {total} data points · {metric} · Tap or hover points for details',
       'chart.noValues': 'No values for this metric.',
+      'chart.noValuesInRange': 'No values in this time range.',
       'chart.noData': 'No chart data yet',
+      'chart.legendValue': 'Measured value',
+      'chart.legendMa7': '7-day average',
+      'chart.tooltipMa7': '7d avg: {value}{unit}',
 
-      // Storage status
+      // Storage & backup reminder
       'storage.saved': '{count} measurement(s) saved locally.',
       'storage.unavailable': 'Local storage unavailable. Export an enriched CSV.',
       'storage.summary': '{total} measurement(s) in dashboard · {withKcal} with both calorie values',
+      'backup.never': 'Reminder: You have {count} local measurements and no CSV backup exported yet.',
+      'backup.old': 'Reminder: Your last CSV backup was {days} days ago ({changes} change(s) since).',
+      'backup.changes': 'Reminder: {changes} change(s) since your last CSV backup.',
+      'backup.exportNow': 'Export backup now',
 
       // Import / Export / Clear messages
       'import.readingTitle': 'Reading CSV …',
@@ -116,6 +155,7 @@
       'import.doneTitle': 'CSV processed successfully',
       'import.doneSame': '{added} new measurement(s), {updated} existing measurement(s). These values were already imported, so charts remain unchanged.',
       'import.doneChanged': '{added} new measurement(s), {updated} existing measurement(s). Updated values now appear in the dashboard.',
+      'import.doneRange': 'Imported date range: {from} – {to}',
       'import.doneTotal': 'Total: {total} measurement(s). Trends are available after at least two measurement dates.',
       'import.toastDone': 'CSV import complete.',
       'import.failTitle': 'CSV import failed',
@@ -147,9 +187,12 @@
       'ocr.failTitle': 'Screenshot OCR unavailable',
       'ocr.failDetail': '{message} Enter the values manually in the dialog and select “Apply values”.',
 
-      // Export & clear
+      // Export, single delete & clear
       'export.empty': 'No data to export.',
       'export.done': 'Enriched CSV created.',
+      'deleteSelected.empty': 'No measurement selected to delete.',
+      'deleteSelected.confirm': 'Delete the measurement from {date} · {time}? This action cannot be undone.',
+      'deleteSelected.done': 'Measurement from {date} · {time} deleted.',
       'clear.confirm': 'Delete all saved measurements from this app? This action cannot be undone.',
       'clear.done': 'Local measurements deleted.',
 
@@ -197,6 +240,8 @@
       'actions.importCsvAria': 'CSV-Datei auswählen',
       'actions.readScreenshot': '▧ Screenshot auslesen',
       'actions.readScreenshotAria': 'Screenshot auswählen',
+      'actions.installApp': '↓ App installieren',
+      'actions.installAppIos': '＋ Zum Home-Bildschirm',
       'theme.label': 'Farbschema',
       'theme.aria': 'Farbschema wählen',
       'theme.dark': 'Nachtblau (Standard)',
@@ -205,13 +250,28 @@
       'theme.neon': 'Neon',
       'lang.label': 'Language / Sprache',
 
+      // Comparison baseline selector
+      'compare.label': 'Karten vergleichen mit',
+      'compare.aria': 'Vergleichszeitpunkt',
+      'compare.prev': 'Vorherige Messung',
+      'compare.7d': 'Vor ca. 7 Tagen',
+      'compare.30d': 'Vor ca. 30 Tagen',
+      'compare.90d': 'Vor ca. 90 Tagen',
+      'compare.first': 'Erste Messung',
+
       // Section headings
       'status.sectionAria': 'Weitere Messwerte und Trends',
       'trends.title': 'Entwicklung',
       'trends.subtitle': 'Verläufe aus deinen importierten Messungen',
       'trends.metricAria': 'Diagrammwert',
+      'trends.rangeAria': 'Zeitraum',
+      'trends.rangeAll': 'Alle Daten',
+      'trends.range30': '30 Tage',
+      'trends.range90': '90 Tage',
+      'trends.range365': '1 Jahr',
       'trends.dateAria': 'Aktuelle Messung',
       'trends.chartAria': 'Zeitverlaufsdiagramm',
+      'trends.ma7': '7-Tage-Schnitt',
       'composition.label': 'Körperzusammensetzung',
       'composition.note': 'Prozentwerte sind unterschiedliche Kennzahlen und ergeben zusammen nicht 100 %.',
 
@@ -250,6 +310,7 @@
       'manage.subtitle': 'Du behältst die Kontrolle über deine Messungen',
       'manage.manualBtn': '＋ Kalorienwerte manuell ergänzen',
       'manage.exportBtn': '↓ Ergänzte CSV exportieren',
+      'manage.deleteSelectedBtn': 'Ausgewählte Messung löschen',
       'manage.clearBtn': 'Alle lokalen Daten löschen',
       'manage.notice': 'Die Beurer-CSV enthält Grundumsatz und Leistungsumsatz möglicherweise nicht. Diese zwei Werte lassen sich aus einem Screenshot auslesen und anschließend der Messung zuordnen. Die OCR-Bibliothek wird bei Bedarf aus dem Internet geladen; das Bild selbst wird im Browser verarbeitet und nicht an einen Server dieser App gesendet.',
       'footer.text': 'AtlasSometria · Private lokale Web-App · Messwerte sind Schätzungen des Messgeräts, keine Diagnose. Daten werden ausschließlich im Browser gespeichert (sofern lokaler Speicher aktiviert ist). Beim Löschen der Browserdaten können sie verloren gehen; regelmäßig ergänzte CSV-Backups exportieren.',
@@ -266,25 +327,46 @@
       'modal.apply': 'Werte übernehmen',
       'modal.cancel': 'Abbrechen',
 
+      // iOS install guide modal
+      'install.iosTitle': 'AtlasSometria zum Home-Bildschirm',
+      'install.iosIntro': 'Speichere AtlasSometria auf deinem iPhone oder iPad für schnellen Vollbild-Start:',
+      'install.iosStep1': 'Tippe in der Safari-Leiste auf das Teilen-Symbol.',
+      'install.iosStep2': 'Scrolle nach unten und wähle „Zum Home-Bildschirm“.',
+      'install.iosStep3': 'Bestätige oben rechts mit „Hinzufügen“.',
+      'install.done': 'Verstanden',
+      'install.installedToast': 'AtlasSometria wurde installiert.',
+
       // Dynamic dashboard states
       'empty.state': 'Keine Messungen vorhanden. Importiere eine Beurer-CSV.',
       'delta.none': 'Noch kein Vergleich',
       'delta.same': '→ Unverändert zur vorherigen Messung',
       'delta.up': '↑ +{diff}{unit} zur vorherigen Messung',
       'delta.down': '↓ −{diff}{unit} zur vorherigen Messung',
+      'delta.sameDate': '→ Unverändert zu {date}',
+      'delta.upDate': '↑ +{diff}{unit} zu {date}',
+      'delta.downDate': '↓ −{diff}{unit} zu {date}',
       'spark.minTwo': 'Verlauf ab 2 Messungen',
       'spark.aria': 'Verlauf der letzten {count} Messungen',
 
-      // Chart notes
+      // Chart notes & tooltips
       'chart.single': 'Bisher eine Messung – für einen Verlauf weitere CSV-Dateien importieren.',
-      'chart.points': '{count} Messpunkte · {metric}',
+      'chart.points': '{count} Messpunkte · {metric} · Punkte für Details antippen',
+      'chart.pointsInRange': '{count} von {total} Messpunkten · {metric} · Punkte für Details antippen',
       'chart.noValues': 'Keine Werte für diese Kennzahl.',
+      'chart.noValuesInRange': 'Keine Werte in diesem Zeitraum.',
       'chart.noData': 'Noch keine Diagrammdaten',
+      'chart.legendValue': 'Messwert',
+      'chart.legendMa7': '7-Tage-Schnitt',
+      'chart.tooltipMa7': '7-T-Schnitt: {value}{unit}',
 
-      // Storage status
+      // Storage & backup reminder
       'storage.saved': '{count} Messung(en) lokal gespeichert.',
       'storage.unavailable': 'Lokaler Speicher nicht verfügbar. Bitte ergänzte CSV exportieren.',
       'storage.summary': '{total} Messung(en) im Dashboard · {withKcal} mit beiden Kalorienwerten',
+      'backup.never': 'Erinnerung: Du hast {count} lokale Messungen und noch kein CSV-Backup exportiert.',
+      'backup.old': 'Erinnerung: Dein letztes CSV-Backup ist {days} Tage her ({changes} Änderung(en) seitdem).',
+      'backup.changes': 'Erinnerung: {changes} Änderung(en) seit deinem letzten CSV-Backup.',
+      'backup.exportNow': 'Backup jetzt exportieren',
 
       // Import / Export / Clear messages
       'import.readingTitle': 'CSV wird eingelesen …',
@@ -292,6 +374,7 @@
       'import.doneTitle': 'CSV erfolgreich verarbeitet',
       'import.doneSame': '{added} neue Messung(en), {updated} bereits vorhandene Messung(en). Die Messwerte waren schon vorhanden – deshalb bleiben die Diagramme unverändert.',
       'import.doneChanged': '{added} neue Messung(en), {updated} bereits vorhandene Messung(en). Aktualisierte Werte werden jetzt im Dashboard angezeigt.',
+      'import.doneRange': 'Importierter Zeitraum: {from} – {to}',
       'import.doneTotal': 'Insgesamt {total} Messung(en). Ein Zeitverlauf entsteht ab zwei unterschiedlichen Messzeitpunkten.',
       'import.toastDone': 'CSV-Import abgeschlossen.',
       'import.failTitle': 'CSV-Import fehlgeschlagen',
@@ -323,9 +406,12 @@
       'ocr.failTitle': 'Screenshot-Texterkennung nicht verfügbar',
       'ocr.failDetail': '{message} Bitte die Werte im geöffneten Fenster manuell eintragen und „Werte übernehmen“ wählen.',
 
-      // Export & clear
+      // Export, single delete & clear
       'export.empty': 'Keine Daten zum Exportieren.',
       'export.done': 'Ergänzte CSV erstellt.',
+      'deleteSelected.empty': 'Keine Messung zum Löschen ausgewählt.',
+      'deleteSelected.confirm': 'Messung vom {date} · {time} wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+      'deleteSelected.done': 'Messung vom {date} · {time} gelöscht.',
       'clear.confirm': 'Alle gespeicherten Messungen aus dieser App löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
       'clear.done': 'Lokale Messdaten gelöscht.',
 
