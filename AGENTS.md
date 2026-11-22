@@ -6,6 +6,10 @@ These instructions apply to every change to this repository, including changes m
 
 **Do not report a fix or feature as finished merely because a file was edited, JavaScript parsed, a build passed, or a commit was pushed. Verify the affected real user workflow.** If an end-to-end test is technically unavailable, state exactly what was and was not verified. Never claim an unperformed check.
 
+## Change history and chat handoff
+
+Before starting work, also read [`project-history/CHAT.md`](project-history/CHAT.md). After each repository change, append a factual record with date, objective, affected files, root cause (if applicable), commit SHA, privacy check, actual tests performed, deployment verification, and anything not tested. This history is a technical handoff, not a verbatim private conversation transcript; never include personal health measurements, uploaded files, tokens, or sensitive metadata. Update this file as part of the same authorized publication workflow whenever feasible.
+
 ## Required workflow
 
 1. **Inspect first.** Read this file, the README files, and the relevant implementation. Check existing conventions, previous fixes, and potential interactions. Avoid unnecessary changes.
